@@ -1,0 +1,42 @@
+HTTP Request Token:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwZmYzNzk5ZmU0MTVmMTNhIiwidXNlcm5hbWUiOiI3MWVhZTY1ZGFkMmE4NzNjIiwicHdkIjoiMzhkNTVlM2M1N2IxZjRjNWM3MzRlZWQ3ZmM3YmQ0ZTg1MzdlZDY4OWM3YWFhMjBlOGIwYjIyZjE4Y2I0NWMxZWFl
+YjVlNjZhMzE0YzNkYWUiLCJleHAiOjE3NzA2NTI4MDB9.wq3jcE2la_5E46BiONjYAyn5JnsRmryYe5uC7X7wrNc
+HTTP Request Headers: {Content-Type: application/json, Accept: application/json, Token:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwZmYzNzk5ZmU0MTVmMTNhIiwidXNlcm5hbWUiOiI3MWVhZTY1ZGFkMmE4NzNjIiwicHdkIjoiMzhkNTVlM2M1N2IxZjRjNWM3MzRlZWQ3ZmM3YmQ0ZTg1MzdlZDY4OWM3YWFhMjBlOGIwYjIyZjE4Y2I0NWMxZWFl
+YjVlNjZhMzE0YzNkYWUiLCJleHAiOjE3NzA2NTI4MDB9.wq3jcE2la_5E46BiONjYAyn5JnsRmryYe5uC7X7wrNc}
+*** Request ***
+uri: https://hy.yunmagic.com/api/v1/laboratory/command/send
+method: POST
+responseType: ResponseType.json
+followRedirects: true
+persistentConnection: true
+connectTimeout: 0:00:10.000000
+sendTimeout: 0:00:10.000000
+receiveTimeout: 0:00:15.000000
+receiveDataWhenStatusError: true
+extra: {}
+headers:
+ Content-Type: application/json
+ Accept: application/json
+ Token:
+ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwZmYzNzk5ZmU0MTVmMTNhIiwidXNlcm5hbWUiOiI3MWVhZTY1ZGFkMmE4NzNjIiwicHdkIjoiMzhkNTVlM2M1N2IxZjRjNWM3MzRlZWQ3ZmM3YmQ0ZTg1MzdlZDY4OWM3YWFhMjBlOGIwYjIyZjE4Y2I0NWMxZWF
+ lYjVlNjZhMzE0YzNkYWUiLCJleHAiOjE3NzA2NTI4MDB9.wq3jcE2la_5E46BiONjYAyn5JnsRmryYe5uC7X7wrNc
+data:
+{task_id: Hp0x4PlA2zZ7ToRX, user_id: dev_user_3, command_data: [{name: 创建日历1, arguments: {开始时间: {value: 2026-01-19 00:00:00, confidence: 0, options: []}, 日历事件: {value: 测试, confidence: 0, options: []}, 星级: {value:
+3, confidence: 0, options: []}, 结束时间: {value: 2026-01-19 00:00:00, confidence: 0, options: []}}}]}
+
+*** Response ***
+uri: https://hy.yunmagic.com/api/v1/laboratory/command/send
+statusCode: 200
+statusMessage: OK
+headers:
+ access-control-allow-headers: X-Requested-With
+ access-control-allow-methods: GET,POST,OPTIONS
+ access-control-allow-origin: *
+ connection: keep-alive
+ content-length: 111
+ content-type: application/json; charset=utf-8
+ date: Thu, 05 Feb 2026 09:40:12 GMT
+ server: nginx/1.24.0 (Ubuntu)
+Response Text:
+{"code":500,"message":"系统错误，请重试","data":"invalid character 'I' looking for beginning of value"}
