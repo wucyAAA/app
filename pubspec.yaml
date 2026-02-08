@@ -28,7 +28,7 @@ dependencies:
   provider: ^6.1.1
 
   # 日期格式化 - 使用灵活版本
-  intl: ^0.19.0
+  # intl: ^0.19.0
 
   # 本地存储
   shared_preferences: ^2.2.2
