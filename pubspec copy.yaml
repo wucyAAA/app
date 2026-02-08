@@ -12,13 +12,13 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_localizations:
-    sdk: flutter
-
   # iOS 风格组件
   cupertino_icons: ^1.0.6
   lucide_icons: ^0.257.0
   google_fonts: ^6.1.0
+
+  flutter_localizations:
+    sdk: flutter
 
   # 网络请求
   http: ^1.1.0
@@ -27,8 +27,8 @@ dependencies:
   # 状态管理
   provider: ^6.1.1
 
-  # 日期格式化 - 使用灵活版本
-  intl: ^0.19.0
+  # 日期格式化
+  intl: 0.19.0
 
   # 本地存储
   shared_preferences: ^2.2.2
@@ -39,8 +39,13 @@ dependencies:
   # 下拉刷新
   pull_to_refresh: ^2.0.0
 
-  # HTML渲染 - 建议使用稳定版本
+  # HTML渲染
   flutter_html: ^3.0.0-beta.2
+
+  # 推送通知 (需要配置 Firebase)
+  # firebase_core: ^2.24.2
+  # firebase_messaging: ^14.7.10
+  # flutter_local_notifications: ^16.3.0
 
   # URL 启动器
   url_launcher: ^6.2.2
@@ -56,15 +61,9 @@ dependencies:
   record: ^5.1.0
   path_provider: ^2.1.2
   permission_handler: ^11.3.0
-  
-  # 视频播放器
   video_player: ^2.9.5
   chewie: ^1.10.0
-  
-  # Windows 视频播放器 - 仅在 Windows 平台需要
-  video_player_win:
-    ^3.2.2
-    # 或者完全移除，因为这是 iOS 应用
+  video_player_win: ^3.2.2
 
 dev_dependencies:
   flutter_test:
@@ -76,3 +75,15 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+
+  # 使用 Google Fonts 或系统字体
+  # fonts:
+  #   - family: SF Pro Display
+  #     fonts:
+  #       - asset: assets/fonts/SF-Pro-Display-Regular.otf
+  #       - asset: assets/fonts/SF-Pro-Display-Medium.otf
+  #         weight: 500
+  #       - asset: assets/fonts/SF-Pro-Display-Semibold.otf
+  #         weight: 600
+  #       - asset: assets/fonts/SF-Pro-Display-Bold.otf
+  #         weight: 700
