@@ -13,8 +13,10 @@ class NewsItem {
   final bool mark;
   final int star;
   final int classId;
+  final int? dataId; // Added dataId
   final String? content;
   final String? author;
+  final String? external;
   final NewsTag? tag;
 
   NewsItem({
@@ -29,8 +31,10 @@ class NewsItem {
     required this.mark,
     required this.star,
     required this.classId,
+    this.dataId,
     this.content,
     this.author,
+    this.external,
     this.tag,
   });
 
@@ -47,10 +51,41 @@ class NewsItem {
       mark: json['mark'] ?? false,
       star: json['star'] ?? 0,
       classId: json['class_id'] ?? 0,
+      dataId: json['data_id'],
       content: json['content'],
       author: json['author'],
+      external: json['external'],
       tag: json['tag'] != null ? NewsTag.fromJson(json['tag']) : null,
     );
+  }
+
+  /// 是否是支持中间页跳转的类型
+  bool get isMidPageType {
+    const supported = [
+      'bloomberg',
+      'bloomberg_test',
+      'reuters',
+      'twitter',
+      'caixin',
+      'jnz',
+      'zsxq',
+      'product',
+      'pzb',
+      'acecamp'
+    ];
+    return supported.contains(external);
+  }
+
+  /// 获取跳转用的 record_id (优先使用 data_id)
+  String get midPageRecordId => (dataId ?? id).toString();
+
+  /// 获取跳转用的链接 (部分类型需要编码)
+  String get midPageLink {
+    if (link == null) return '';
+    if (external == 'jnz') {
+      return Uri.encodeComponent(link!);
+    }
+    return link!;
   }
 
   /// 获取格式化的时间
@@ -229,5 +264,112 @@ class NewsApi {
   /// 刷新（下拉，获取最新的新闻）
   static Future<NewsListResult> refresh({required int maxId, int count = 20}) {
     return getNewsList(n: count, offset: maxId, direction: LoadDirection.up);
+  }
+
+  /// 获取中间页数据 (Bloomberg, Twitter, etc.)
+  static Future<MidPageResult> getMidPageData({
+    required String link,
+    String? recordId,
+  }) async {
+    try {
+      final params = {'link': link};
+      if (recordId != null) {
+        params['id'] = recordId;
+      }
+
+      final response = await http.get(
+        'news/bloomberg',
+        params: params,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final body = response.data as Map<String, dynamic>;
+        // API 响应结构: code, data: { status: 'ok', data: {...}, url: [...] }
+        // 注意：Vue 代码中是 res.data.data -> data
+        
+        if (body['code'] == 200) {
+          final data = body['data'];
+          if (data != null) {
+            return MidPageResult(
+              success: true,
+              data: MidPageData.fromJson(data),
+            );
+          }
+        }
+        return MidPageResult(
+          success: false, 
+          message: body['message'] ?? '获取数据失败'
+        );
+      } else {
+        return MidPageResult(success: false, message: response.message);
+      }
+    } catch (e) {
+      return MidPageResult(success: false, message: '发生错误: $e');
+    }
+  }
+
+  /// 上报中间页错误
+  static Future<bool> reportMidPageError({required String link}) async {
+    try {
+      final response = await http.get(
+        'news/bloomberg/report',
+        params: {'link': link},
+      );
+      if (response.isSuccess) {
+        final body = response.data as Map<String, dynamic>;
+        return body['code'] == 200;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+class MidPageResult {
+  final bool success;
+  final String? message;
+  final MidPageData? data;
+
+  MidPageResult({required this.success, this.message, this.data});
+}
+
+class MidPageData {
+  final String status;
+  final int waiting;
+  final List<String> urls;
+  final dynamic contentData; // 对应 JSON 中的 data 字段
+  final String? html; // 对应 JSON 中的 html 字段
+
+  MidPageData({
+    required this.status,
+    this.waiting = 0,
+    this.urls = const [],
+    this.contentData,
+    this.html,
+  });
+
+  factory MidPageData.fromJson(Map<String, dynamic> json) {
+    // 根据 api.md，实际内容可能嵌套在 json['data'] 中
+    Map<String, dynamic> target = json;
+    if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
+      target = json['data'] as Map<String, dynamic>;
+    }
+
+    List<String> urlList = [];
+    if (target['url'] != null && target['url'] is List) {
+      urlList = (target['url'] as List).map((e) => e.toString()).toList();
+    } else if (json['url'] != null && json['url'] is List) {
+       // 兼容性检查
+       urlList = (json['url'] as List).map((e) => e.toString()).toList();
+    }
+    
+    return MidPageData(
+      status: target['status'] ?? json['status'] ?? '',
+      waiting: target['waiting'] ?? json['waiting'] ?? 0,
+      urls: urlList,
+      contentData: target['data'] ?? target, // 这里的 data 是更深一层的业务数据，如果没嵌套则用当前层
+      html: target['html'] ?? json['html'],
+    );
   }
 }

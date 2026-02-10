@@ -6,6 +6,8 @@ import '../screens/push_library_screen.dart';
 import '../screens/assistant_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/login.dart';
+import '../screens/webview_screen.dart';
+import '../screens/mid_page_screen.dart';
 import '../services/app_state.dart';
 import 'main_shell.dart';
 
@@ -18,16 +20,18 @@ class AppRoutes {
   static const String assistant = '/assistant';
   static const String profile = '/profile';
   static const String login = '/login';
+  static const String webview = '/webview';
+  static const String midpage = '/midpage';
   static const String settings = '/settings';
 }
 
 // 路由配置
 class AppRouter {
-  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   static final GoRouter router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.news,
     debugLogDiagnostics: true,
     refreshListenable: AppState.instance,
@@ -100,6 +104,31 @@ class AppRouter {
         path: AppRoutes.login,
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.webview,
+        name: 'webview',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final uri = state.uri;
+          final url = uri.queryParameters['url'] ?? '';
+          final title = uri.queryParameters['title'];
+          return WebViewScreen(url: url, title: title);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.midpage,
+        name: 'midpage',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final uri = state.uri;
+          final url = uri.queryParameters['url'] ?? '';
+          final title = uri.queryParameters['title'];
+          final recordId = uri.queryParameters['recordId'];
+          return MidPageScreen(url: url, title: title, recordId: recordId);
+        },
       ),
       // GoRoute(
       //   path: AppRoutes.settings,

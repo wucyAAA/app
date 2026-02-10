@@ -16,6 +16,44 @@ class Stock {
     this.close = '',
   });
 
+  /// 获取显示的涨跌幅，优先使用 change，如果为空则使用 open
+  String get displayChange {
+    if (change.isNotEmpty) return change;
+    if (open.isNotEmpty) return open;
+    return '';
+  }
+
+  /// 是否为上涨
+  bool get isPositive {
+    final val = displayChange;
+    if (val.isEmpty) return false;
+    if (val.startsWith('+')) return true;
+    if (val.startsWith('-')) return false;
+    // 尝试解析为数字（去掉百分号）
+    try {
+      final numStr = val.replaceAll('%', '');
+      final numVal = double.parse(numStr);
+      return numVal > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 是否为下跌
+  bool get isNegative {
+    final val = displayChange;
+    if (val.isEmpty) return false;
+    if (val.startsWith('-')) return true;
+    if (val.startsWith('+')) return false;
+    try {
+      final numStr = val.replaceAll('%', '');
+      final numVal = double.parse(numStr);
+      return numVal < 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
   factory Stock.fromJson(Map<String, dynamic> json) {
     return Stock(
       code: json['code'] ?? '',
@@ -264,6 +302,36 @@ class CommentItem {
     } catch (e) {
       return time;
     }
+  }
+
+  /// 是否是支持中间页跳转的类型
+  bool get isMidPageType {
+    const supported = [
+      'bloomberg',
+      'bloomberg_test',
+      'reuters',
+      'twitter',
+      'caixin',
+      'jnz',
+      'zsxq',
+      'product',
+      'pzb',
+      'acecamp'
+    ];
+    // 这里 CommentItem 使用 rawType 作为 external 的对应字段
+    return supported.contains(rawType);
+  }
+
+  /// 获取跳转用的 record_id (CommentItem 似乎没有 dataId，直接用 id)
+  String get midPageRecordId => id.toString();
+
+  /// 获取跳转用的链接
+  String get midPageLink {
+    if (url.isEmpty) return '';
+    if (rawType == 'jnz') {
+      return Uri.encodeComponent(url);
+    }
+    return url;
   }
 }
 

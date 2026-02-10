@@ -4,7 +4,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import '../api/comment_api.dart';
+import '../router/app_router.dart';
+import '../utils/toast_utils.dart';
 import '../widgets/video_player_widget.dart';
 import '../widgets/video_thumbnail_widget.dart';
 
@@ -233,16 +237,29 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message ?? (result.success ? '推送成功' : '推送失败')),
-        duration: const Duration(seconds: 1),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-      ),
-    );
+    final msg = result.message ?? (result.success ? '推送成功' : '推送失败');
+    if (result.success) {
+      ToastUtils.showSuccess(msg);
+    } else {
+      ToastUtils.showError(msg);
+    }
   }
 
   void _showCommentDetail(CommentItem comment) {
+    if (comment.isMidPageType) {
+      context.push(
+        Uri(
+          path: AppRoutes.midpage,
+          queryParameters: {
+            'url': comment.midPageLink,
+            'title': comment.title,
+            'recordId': comment.midPageRecordId,
+          },
+        ).toString(),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -600,133 +617,120 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
   }
 
-  Widget _buildCommentItem(CommentItem comment, ThemeData theme, bool isDark) {
-    return GestureDetector(
-      onTap: () => _showCommentDetail(comment),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        color: theme.cardTheme.color,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Time, Group, Sender, UserType
-            _buildMetaInfo(comment, theme, isDark),
-            const SizedBox(height: 8),
-            // Title/Content - 列表不换行，去除HTML标签
-            Text(
-              comment.listDisplayContent,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.47,
-                color: theme.textTheme.bodyLarge?.color ?? Colors.black,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (comment.hasImage && !comment.hasVideo) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _showImagePreview(context, comment.url),
-                child: Container(
-                  width: 128,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF374151)
-                        : const Color(0xFFE5E5EA),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: comment.url.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            comment.url,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Center(
-                              child: Icon(
-                                LucideIcons.image,
-                                size: 32,
-                                color: theme.textTheme.bodySmall?.color ??
-                                    const Color(0xFF8E8E93),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Center(
-                          child: Icon(
-                            LucideIcons.image,
-                            size: 32,
-                            color: theme.textTheme.bodySmall?.color ??
-                                const Color(0xFF8E8E93),
-                          ),
-                        ),
-                ),
+    Widget _buildCommentItem(CommentItem comment, ThemeData theme, bool isDark) {
+      return RepaintBoundary(
+        child: Slidable(
+          key: ValueKey(comment.id),
+          endActionPane: ActionPane(
+            motion: const ScrollMotion(),
+            extentRatio: 0.25,
+            children: [
+              SlidableAction(
+                onPressed: (_) => _pushComment(comment),
+                backgroundColor: const Color(0xFF5856D6),
+                foregroundColor: Colors.white,
+                icon: Icons.send_rounded,
+                label: '推送',
               ),
             ],
-            if (comment.hasVideo && comment.url.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              VideoThumbnailWidget(
-                videoUrl: comment.url,
-                width: 160,
-                height: 90,
-                onTap: () => _showCommentDetail(comment),
-              ),
-            ],
-            // Stocks and Keywords
-            if (comment.stocks.isNotEmpty || comment.keywords.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  ...comment.stocks
-                      .map((stock) => _buildStockTag(stock, isDark)),
-                  ...comment.keywords
-                      .map((keyword) => _buildKeywordTag(keyword, isDark)),
-                ],
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                GestureDetector(
-                  onTap: () => _pushComment(comment),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    color: Colors.transparent, // 扩大点击区域
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.send_rounded,
-                          size: 16,
-                          color: theme.textTheme.bodySmall?.color ??
-                              const Color(0xFF8E8E93),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '推送',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.textTheme.bodySmall?.color ??
-                                const Color(0xFF8E8E93),
-                          ),
-                        ),
-                      ],
+          ),
+          child: Container(
+            width: double.infinity,
+            color: theme.cardTheme.color,
+            child: GestureDetector(
+              onTap: () => _showCommentDetail(comment),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Time, Group, Sender, UserType
+                    _buildMetaInfo(comment, theme, isDark),
+                    const SizedBox(height: 8),
+                    // Title/Content - 列表不换行，去除HTML标签
+                    Text(
+                      comment.listDisplayContent,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.47,
+                        color: theme.textTheme.bodyLarge?.color ?? Colors.black,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    if (comment.hasImage && !comment.hasVideo) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _showImagePreview(context, comment.url),
+                        child: Container(
+                          width: 128,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF374151)
+                                : const Color(0xFFE5E5EA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: comment.url.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    comment.url,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(
+                                      child: Icon(
+                                        LucideIcons.image,
+                                        size: 32,
+                                        color: theme.textTheme.bodySmall?.color ??
+                                            const Color(0xFF8E8E93),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Icon(
+                                    LucideIcons.image,
+                                    size: 32,
+                                    color: theme.textTheme.bodySmall?.color ??
+                                        const Color(0xFF8E8E93),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                    if (comment.hasVideo && comment.url.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      VideoThumbnailWidget(
+                        videoUrl: comment.url,
+                        width: 160,
+                        height: 90,
+                        onTap: () => _showCommentDetail(comment),
+                      ),
+                    ],
+                    // Stocks and Keywords
+                    if (comment.stocks.isNotEmpty ||
+                        comment.keywords.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          ...comment.stocks
+                              .map((stock) => _buildStockTag(stock, isDark)),
+                          ...comment.keywords.map(
+                              (keyword) => _buildKeywordTag(keyword, isDark)),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-
+      );
+    }
   Widget _buildMetaInfo(CommentItem comment, ThemeData theme, bool isDark) {
     final metaColor =
         theme.textTheme.bodySmall?.color ?? const Color(0xFF6B7280);
@@ -825,8 +829,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   Widget _buildStockTag(Stock stock, bool isDark) {
-    final isPositive = stock.change.startsWith('+');
-    final isNegative = stock.change.startsWith('-');
+    final displayChange = stock.displayChange;
+    final isPositive = stock.isPositive;
+    final isNegative = stock.isNegative;
 
     Color bgColor;
     Color textColor;
@@ -849,7 +854,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        '${stock.name} ${stock.change}',
+        '${stock.name} $displayChange',
         style: TextStyle(
           fontSize: 11,
           color: textColor,
@@ -1072,7 +1077,8 @@ class CommentDetailModal extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           // Content - 详情使用Html渲染
-                                                      Padding(                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(
                                   minWidth: double.infinity),
@@ -1090,11 +1096,10 @@ class CommentDetailModal extends StatelessWidget {
                                     padding: HtmlPaddings.zero,
                                   ),
                                   "p": Style(
-                                    margin: Margins.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                    margin: Margins.symmetric(vertical: 8),
                                   ),
                                   "div": Style(
-                                    margin: Margins.symmetric(horizontal: 16),
+                                    margin: Margins.zero,
                                   ),
                                 },
                                 extensions: [
@@ -1282,8 +1287,9 @@ class CommentDetailModal extends StatelessWidget {
   }
 
   Widget _buildStockChip(Stock stock, bool isDark) {
-    final isPositive = stock.change.startsWith('+');
-    final isNegative = stock.change.startsWith('-');
+    final displayChange = stock.displayChange;
+    final isPositive = stock.isPositive;
+    final isNegative = stock.isNegative;
 
     Color bgColor;
     Color textColor;
@@ -1306,7 +1312,7 @@ class CommentDetailModal extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        '${stock.name} ${stock.change}',
+        '${stock.name} $displayChange',
         style: TextStyle(
           fontSize: 13,
           color: textColor,
@@ -1376,7 +1382,7 @@ class _FilterModalState extends State<FilterModal> {
   late List<String> selectedGroups;
   late List<String> selectedUserTypes;
 
-  final List<String> timeRanges = ['全部', '今天', '近3天', '最近7天', '最近30天', '最近3个月'];
+  final List<String> timeRanges = ['今天', '近3天', '最近7天', '最近30天', '最近3个月'];
 
   final List<String> userTypeOptions = ['卖方', '散户', '疑似卖方'];
 

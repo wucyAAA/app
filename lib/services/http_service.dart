@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'app_state.dart';
+import '../utils/toast_utils.dart';
 
 class HttpService {
   static HttpService? _instance;
@@ -48,12 +49,12 @@ class HttpService {
     ));
 
     // 调试模式下打印日志
-    if (kDebugMode) {
-      _dio.interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-      ));
-    }
+    // if (kDebugMode) {
+    //   _dio.interceptors.add(LogInterceptor(
+    //     requestBody: true,
+    //     responseBody: true,
+    //   ));
+    // }
   }
 
   // 设置代理
@@ -111,22 +112,40 @@ class HttpService {
   void _onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 自动从全局状态读取 token
     final token = AppState.instance.token;
-    debugPrint('HTTP Request Token: $token');
     if (token != null && token.isNotEmpty) {
       options.headers['Token'] = token;
     }
-    debugPrint('HTTP Request Headers: ${options.headers}');
+
+    if (kDebugMode) {
+      debugPrint('------------------------------------------------');
+      debugPrint('Request: [${options.method}] ${options.uri}');
+      if (options.queryParameters.isNotEmpty) {
+        debugPrint('Params: ${options.queryParameters}');
+      }
+      if (options.data != null) {
+        debugPrint('Body: ${options.data}');
+      }
+      debugPrint('------------------------------------------------');
+    }
     handler.next(options);
   }
 
   // 响应拦截器
   void _onResponse(Response response, ResponseInterceptorHandler handler) {
-    // 可以在这里统一处理响应数据
+    if (kDebugMode) {
+      debugPrint('Response: [${response.statusCode}] ${response.requestOptions.uri}');
+    }
     handler.next(response);
   }
 
   // 错误拦截器
   void _onError(DioException error, ErrorInterceptorHandler handler) {
+    // 检查 401 未授权
+    if (error.response?.statusCode == 401) {
+      ToastUtils.showWarning('登录已过期，请重新登录');
+      AppState.instance.logout();
+    }
+
     // 统一错误处理
     String message = _getErrorMessage(error);
     debugPrint('HTTP Error: $message');

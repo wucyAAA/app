@@ -5,7 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import '../api/news_api.dart';
+import '../router/app_router.dart';
+import '../utils/toast_utils.dart';
 
 class NewsFeedScreen extends StatefulWidget {
   const NewsFeedScreen({super.key});
@@ -213,12 +217,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
     // 移除 HTML 标签
     final cleanText = text.replaceAll(RegExp(r'<[^>]*>'), '');
     Clipboard.setData(ClipboardData(text: cleanText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已复制到剪贴板'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    ToastUtils.showSuccess('已复制到剪贴板');
   }
 
   Future<void> _pushNews(NewsItem news) async {
@@ -226,20 +225,26 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result.message ?? (result.success ? '推送成功' : '推送失败')),
-        duration: const Duration(seconds: 1),
-        backgroundColor: result.success ? Colors.green : Colors.red,
-      ),
-    );
+    final msg = result.message ?? (result.success ? '推送成功' : '推送失败');
+    if (result.success) {
+      ToastUtils.showSuccess(msg);
+    } else {
+      ToastUtils.showError(msg);
+    }
   }
 
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  Future<void> _openUrl(String url, {String? title, String? recordId, bool isMidPage = false}) async {
+    final path = isMidPage ? AppRoutes.midpage : AppRoutes.webview;
+    context.push(
+      Uri(
+        path: path,
+        queryParameters: {
+          'url': url,
+          if (title != null) 'title': title,
+          if (recordId != null) 'recordId': recordId,
+        },
+      ).toString(),
+    );
   }
 
   @override
@@ -440,35 +445,73 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
 
   Widget _buildNewsItem(NewsItem news, ThemeData theme) {
     return RepaintBoundary(
-      child: InkWell(
-        onTap: news.link != null ? () => _openUrl(news.link!) : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildMetaInfo(news, theme),
-              const SizedBox(height: 4),
-              Html(
-                data: news.title,
-                style: {
-                  "body": Style(
-                    fontSize: FontSize(15),
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                    color: news.link != null 
-                        ? (theme.brightness == Brightness.dark ? const Color(0xFF60A5FA) : Colors.black) 
-                        : theme.textTheme.bodyLarge?.color,
-                    fontWeight: FontWeight.w400,
-                    lineHeight: const LineHeight(1.33),
-                    maxLines: 2,
-                    textOverflow: TextOverflow.ellipsis,
+      child: Slidable(
+        key: ValueKey(news.id),
+        endActionPane: ActionPane(
+          motion: const ScrollMotion(),
+          extentRatio: 0.4,
+          children: [
+            SlidableAction(
+              onPressed: (_) => _copyToClipboard(news.titleRaw),
+              backgroundColor: const Color(0xFF007AFF),
+              foregroundColor: Colors.white,
+              icon: Icons.copy_rounded,
+              label: '复制',
+            ),
+            SlidableAction(
+              onPressed: (_) => _pushNews(news),
+              backgroundColor: const Color(0xFF5856D6),
+              foregroundColor: Colors.white,
+              icon: Icons.send_rounded,
+              label: '推送',
+            ),
+          ],
+        ),
+        child: Container(
+          width: double.infinity,
+          color: theme.cardTheme.color,
+          child: InkWell(
+            onTap: news.link != null 
+              ? () {
+                  if (news.isMidPageType) {
+                    _openUrl(
+                      news.midPageLink, 
+                      title: news.titleRaw, 
+                      recordId: news.midPageRecordId,
+                      isMidPage: true,
+                    );
+                  } else {
+                    _openUrl(news.link!, title: news.titleRaw);
+                  }
+                } 
+              : null,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMetaInfo(news, theme),
+                  const SizedBox(height: 4),
+                  Html(
+                    data: news.title,
+                    style: {
+                      "body": Style(
+                        fontSize: FontSize(15),
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                        color: news.link != null 
+                            ? (theme.brightness == Brightness.dark ? const Color(0xFF60A5FA) : Colors.black) 
+                            : theme.textTheme.bodyLarge?.color,
+                        fontWeight: FontWeight.w400,
+                        lineHeight: const LineHeight(1.33),
+                        maxLines: 2,
+                        textOverflow: TextOverflow.ellipsis,
+                      ),
+                    },
                   ),
-                },
+                ],
               ),
-              const SizedBox(height: 8),
-              _buildActionButtons(news, theme),
-            ],
+            ),
           ),
         ),
       ),
@@ -529,56 +572,6 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
       decoration: BoxDecoration(
         color: theme.textTheme.bodySmall?.color ?? const Color(0xFF9CA3AF),
         shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(NewsItem news, ThemeData theme) {
-    final actionColor = theme.textTheme.bodyMedium?.color ?? const Color(0xFF4B5563);
-    return Row(
-      children: [
-        _buildActionButton(
-          icon: Icons.copy_rounded,
-          label: '复制',
-          onTap: () => _copyToClipboard(news.titleRaw),
-          color: actionColor,
-        ),
-        const SizedBox(width: 24),
-        _buildActionButton(
-          icon: Icons.send_rounded,
-          label: '推送',
-          onTap: () => _pushNews(news),
-          color: actionColor,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: color,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }

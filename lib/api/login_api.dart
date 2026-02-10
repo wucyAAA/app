@@ -35,13 +35,16 @@ class LoginApi {
       final deviceId = await _getDeviceId();
       final encryptedPassword = _encryptPassword(password);
 
+      // 动态判断平台 source (仅支持 'ios' 和 'android')
+      final source = (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
+
       final response = await http.post(
         'login',
         data: {
           'username': username,
           'password': encryptedPassword,
           'ssid': deviceId,
-          'source': 'ios',
+          'source': source,
         },
       );
 
@@ -55,7 +58,7 @@ class LoginApi {
           if (data is Map<String, dynamic>) {
             final verifyCode = data['code'];
 
-            if (verifyCode == 0) {
+            if (verifyCode == 0 || verifyCode == 2) {
               // 登录成功
               final user = User(
                 id: data['user_id'].toString(),

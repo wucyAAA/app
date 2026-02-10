@@ -7,31 +7,20 @@ class User {
   final String name;
   final String email;
   final String? avatar;
-  final List<String> roles; // Added roles
 
   User({
     required this.id,
     required this.name,
     required this.email,
     this.avatar,
-    this.roles = const [],
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    List<String> roleList = [];
-    if (json['roles'] != null && json['roles'] is List) {
-      roleList = (json['roles'] as List).map((e) {
-        if (e is Map) return e['value']?.toString() ?? '';
-        return e.toString();
-      }).where((e) => e.isNotEmpty).toList();
-    }
-
     return User(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       avatar: json['avatar'],
-      roles: roleList,
     );
   }
 
@@ -41,12 +30,8 @@ class User {
       'name': name,
       'email': email,
       'avatar': avatar,
-      'roles': roles,
     };
   }
-
-  /// 是否有截图(中间页)权限
-  bool get hasScreenshotPermission => roles.contains('screenshot');
 }
 
 // 全局应用状态
@@ -63,9 +48,15 @@ class AppState extends ChangeNotifier {
   // ==================== 状态属性 ====================
 
   // 用户相关
-  User? _user;
-  String? _token;
-  bool _isLoggedIn = false;
+  User? _user = User(
+    id: '3',
+    name: '开发测试',
+    email: 'dev@example.com',
+    avatar: '',
+  );
+  String? _token =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwZmYzNzk5ZmU0MTVmMTNhIiwidXNlcm5hbWUiOiI3MWVhZTY1ZGFkMmE4NzNjIiwicHdkIjoiMzhkNTVlM2M1N2IxZjRjNWM3MzRlZWQ3ZmM3YmQ0ZTg1MzdlZDY4OWM3YWFhMjBlOGIwYjIyZjE4Y2I0NWMxZWFlYjVlNjZhMzE0YzNkYWUiLCJleHAiOjE3NzEyNTc2MDB9.MD67XZ8GGFnKWy1uFZATIaaIRqP2RTZ_R3jzNn7Ethw';
+  bool _isLoggedIn = true;
 
   // 主题相关
   bool _isDarkMode = false;
@@ -95,10 +86,15 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 尝试从本地加载 Token
+    // 调试模式下强制使用写死的 Token，或者如果本地没有则使用写死的
     final savedToken = prefs.getString('token');
     if (savedToken != null && savedToken.isNotEmpty) {
       _token = savedToken;
+      _isLoggedIn = true;
+    } else {
+      // 保持硬编码的初始值
+      _token =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwZmYzNzk5ZmU0MTVmMTNhIiwidXNlcm5hbWUiOiI3MWVhZTY1ZGFkMmE4NzNjIiwicHdkIjoiMzhkNTVlM2M1N2IxZjRjNWM3MzRlZWQ3ZmM3YmQ0ZTg1MzdlZDY4OWM3YWFhMjBlOGIwYjIyZjE4Y2I0NWMxZWFlYjVlNjZhMzE0YzNkYWUiLCJleHAiOjE3NzEyNTc2MDB9.MD67XZ8GGFnKWy1uFZATIaaIRqP2RTZ_R3jzNn7Ethw';
       _isLoggedIn = true;
     }
 
@@ -114,6 +110,7 @@ class AppState extends ChangeNotifier {
         avatar: prefs.getString('user_avatar'),
       );
     }
+    // 如果本地没有用户信息，保留硬编码的 mock 用户
 
     // 加载主题设置
     _isDarkMode = prefs.getBool('is_dark_mode') ?? false;

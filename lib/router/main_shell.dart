@@ -79,7 +79,7 @@ class MainShell extends StatelessWidget {
                 context,
                 index: 0,
                 currentIndex: currentIndex,
-                icon: LucideIcons.zap,
+                icon: LucideIcons.newspaper,
                 label: '新闻',
               ),
               _buildNavItem(

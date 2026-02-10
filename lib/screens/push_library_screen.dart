@@ -3,7 +3,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../api/push_api.dart';
+import '../router/app_router.dart';
 
 class PushLibraryScreen extends StatefulWidget {
   const PushLibraryScreen({super.key});
@@ -170,6 +173,19 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
   }
 
   void _showDetail(PushRecord record) {
+    if (record.isMidPageType) {
+      context.push(
+        Uri(
+          path: AppRoutes.midpage,
+          queryParameters: {
+            'url': record.midPageLink,
+            'recordId': record.midPageRecordId,
+          },
+        ).toString(),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -519,7 +535,7 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
                 Text(
                   record.site,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: theme.textTheme.titleMedium?.color ?? const Color(0xFF1C1C1E),
                   ),
@@ -538,7 +554,7 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
                     child: Text(
                       record.path,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -563,6 +579,12 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
             // 时间：带上年月日
             Row(
               children: [
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 14,
+                  color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
+                ),
+                const SizedBox(width: 6),
                 if (record.sourceTime.isNotEmpty) ...[
                   Text(
                     '发布 ${record.sourceTime}',
@@ -741,7 +763,7 @@ class _FilterModalState extends State<FilterModal> {
                     ),
                   ),
                   child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.date,
+                    mode: CupertinoDatePickerMode.dateAndTime,
                     initialDateTime: tempDate,
                     use24hFormat: true,
                     onDateTimeChanged: (DateTime newDate) {
@@ -828,7 +850,7 @@ class _FilterModalState extends State<FilterModal> {
                             onTap: () => _selectDate(context, true),
                             child: _buildDateInput(
                               startDate != null
-                                  ? "${startDate!.year}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')}"
+                                  ? "${startDate!.year}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')} ${startDate!.hour.toString().padLeft(2, '0')}:${startDate!.minute.toString().padLeft(2, '0')}"
                                   : '开始日期',
                               isActive: startDate != null,
                               theme: theme,
@@ -846,7 +868,7 @@ class _FilterModalState extends State<FilterModal> {
                             onTap: () => _selectDate(context, false),
                             child: _buildDateInput(
                               endDate != null
-                                  ? "${endDate!.year}-${endDate!.month.toString().padLeft(2, '0')}-${endDate!.day.toString().padLeft(2, '0')}"
+                                  ? "${endDate!.year}-${endDate!.month.toString().padLeft(2, '0')}-${endDate!.day.toString().padLeft(2, '0')} ${endDate!.hour.toString().padLeft(2, '0')}:${endDate!.minute.toString().padLeft(2, '0')}"
                                   : '结束日期',
                               isActive: endDate != null,
                               theme: theme,
@@ -1062,6 +1084,28 @@ class PushDetailModal extends StatelessWidget {
     required this.onClose,
   });
 
+  Future<void> _launchUrl(BuildContext context, String? url) async {
+    if (url == null) return;
+
+    if (record.isMidPageType) {
+      context.push(
+        Uri(
+          path: AppRoutes.midpage,
+          queryParameters: {
+            'url': record.midPageLink,
+            'recordId': record.midPageRecordId,
+          },
+        ).toString(),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1159,9 +1203,27 @@ class PushDetailModal extends StatelessWidget {
                                   record.site,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.textTheme.titleMedium?.color ?? const Color(0xFF1C1C1E),
                                   ),
                                 ),
+                                if (record.path.isNotEmpty) ...[
+                                  Container(
+                                    width: 4,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: theme.textTheme.bodySmall?.color ?? const Color(0xFFD1D1D6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Text(
+                                    record.path,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
+                                    ),
+                                  ),
+                                ],
                                 Container(
                                   width: 4,
                                   height: 4,
@@ -1184,13 +1246,14 @@ class PushDetailModal extends StatelessWidget {
                           const SizedBox(height: 16),
                           // 内容显示
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: ConstrainedBox(
                               constraints:
                                   const BoxConstraints(minWidth: double.infinity),
                               child: Html(
                                 data: "<div><p>${((record.link.isNotEmpty && !record.link.startsWith('http')) ? record.link : record.content).replaceAll('\n', '<br/>')}</p></div>",
                                 shrinkWrap: true,
+                                onLinkTap: (url, _, __) => _launchUrl(context, url),
                                 style: {
                                   "body": Style(
                                     fontSize: FontSize(16),
@@ -1200,11 +1263,10 @@ class PushDetailModal extends StatelessWidget {
                                     padding: HtmlPaddings.zero,
                                   ),
                                   "p": Style(
-                                    margin: Margins.symmetric(
-                                        horizontal: 16, vertical: 8),
+                                    margin: Margins.symmetric(vertical: 8),
                                   ),
                                   "div": Style(
-                                    margin: Margins.symmetric(horizontal: 16),
+                                    margin: Margins.zero,
                                   ),
                                 },
                               ),
@@ -1245,7 +1307,7 @@ class PushDetailModal extends StatelessWidget {
                               record.link.isNotEmpty &&
                               record.link.startsWith('http')) ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
                                     minWidth: double.infinity),
@@ -1253,6 +1315,7 @@ class PushDetailModal extends StatelessWidget {
                                   data:
                                       "<div><p><a href='${record.link}'>原文链接</a></p></div>",
                                   shrinkWrap: true,
+                                  onLinkTap: (url, _, __) => _launchUrl(context, url),
                                   style: {
                                     "body": Style(
                                       fontSize: FontSize(16),
@@ -1262,8 +1325,10 @@ class PushDetailModal extends StatelessWidget {
                                       padding: HtmlPaddings.zero,
                                     ),
                                     "p": Style(
-                                      margin: Margins.symmetric(
-                                          horizontal: 16, vertical: 8),
+                                      margin: Margins.symmetric(vertical: 8),
+                                    ),
+                                    "div": Style(
+                                      margin: Margins.zero,
                                     ),
                                   },
                                 ),

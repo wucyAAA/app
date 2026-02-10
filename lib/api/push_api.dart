@@ -14,7 +14,7 @@ class PushRecord {
   final int seedId;
   final int ruleId;
   final String sourceTime;
-  final int dataId;
+  final int? dataId; // Already in constructor but maybe missing in field list? No, it was there.
   final String raw;
   final String source;
 
@@ -32,7 +32,7 @@ class PushRecord {
     required this.seedId,
     required this.ruleId,
     required this.sourceTime,
-    required this.dataId,
+    this.dataId, // Make optional to match factory
     required this.raw,
     required this.source,
   });
@@ -52,7 +52,7 @@ class PushRecord {
       seedId: json['seed_id'] ?? 0,
       ruleId: json['rule_id'] ?? 0,
       sourceTime: json['source_time'] ?? '',
-      dataId: json['data_id'] ?? 0,
+      dataId: json['data_id'],
       raw: json['raw'] ?? '',
       source: json['source'] ?? '',
     );
@@ -60,6 +60,35 @@ class PushRecord {
 
   /// 是否有图片
   bool get hasImage => external == 'image' && url.isNotEmpty;
+
+  /// 是否是支持中间页跳转的类型
+  bool get isMidPageType {
+    const supported = [
+      'bloomberg',
+      'bloomberg_test',
+      'reuters',
+      'twitter',
+      'caixin',
+      'jnz',
+      'zsxq',
+      'product',
+      'pzb',
+      'acecamp'
+    ];
+    return supported.contains(external);
+  }
+
+  /// 获取跳转用的 record_id (优先使用 data_id)
+  String get midPageRecordId => (dataId ?? id).toString();
+
+  /// 获取跳转用的链接
+  String get midPageLink {
+    if (link.isEmpty) return '';
+    if (external == 'jnz') {
+      return Uri.encodeComponent(link);
+    }
+    return link;
+  }
 
   // 获取类型显示标签
   String get typeLabel {

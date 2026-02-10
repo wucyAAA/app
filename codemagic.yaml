@@ -10,7 +10,7 @@ workflows:
         - app_store_credentials
       vars:
         XCODE_SCHEME: "Runner"
-        BUNDLE_ID: "com.example.huanyunApp" # 请确保这与你 Apple Developer 账号中的 Bundle ID 一致
+        BUNDLE_ID: "com.huanyun.news" # 请确保这与你 Apple Developer 账号中的 Bundle ID 一致
       flutter: stable
       xcode: latest
       cocoapods: default
