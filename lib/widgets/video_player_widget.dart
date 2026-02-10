@@ -41,10 +41,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           looping: widget.looping,
           aspectRatio: _videoPlayerController.value.aspectRatio,
           errorBuilder: (context, errorMessage) {
-            return Center(
+            return const Center(
               child: Text(
                 '无法播放视频',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             );
           },

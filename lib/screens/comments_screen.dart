@@ -1128,8 +1128,9 @@ class CommentDetailModal extends StatelessWidget {
                                               fit: BoxFit.fitWidth,
                                               loadingBuilder: (context, child,
                                                   loadingProgress) {
-                                                if (loadingProgress == null)
+                                                if (loadingProgress == null) {
                                                   return child;
+                                                }
                                                 return Container(
                                                   height: 200,
                                                   color: isDark
@@ -1429,7 +1430,6 @@ class _FilterModalState extends State<FilterModal> {
         isStart ? (startDate ?? DateTime.now()) : (endDate ?? DateTime.now());
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,

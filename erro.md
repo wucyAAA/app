@@ -1,17 +1,23 @@
-PS C:\Users\user\Desktop\huanyun_app>  flutter run -d chrome --web-browser-flag "--disable-web-security"
-Flutter assets will be downloaded from https://mirrors.tuna.tsinghua.edu.cn/flutter. Make sure you trust this source!
-Launching lib\main.dart on Chrome in debug mode...
-lib/theme/app_theme.dart:113:18: Error: Method not found: 'CardThemeData'.
-      cardTheme: CardThemeData(
-                 ^^^^^^^^^^^^^
-lib/theme/app_theme.dart:228:18: Error: Method not found: 'CardThemeData'.
-      cardTheme: CardThemeData(
-                 ^^^^^^^^^^^^^
-../../AppData/Local/Pub/Cache/hosted/mirrors.tuna.tsinghua.edu.cn%2547dart-pub%2547/record_web-1.3.0/lib/recorder/delegate/mic_recorder_delegate.dart:168:44: Error:
-The getter 'streamBufferSize' isn't defined for the class 'RecordConfig'.
- - 'RecordConfig' is from 'package:record_platform_interface/src/types/record_config.dart'
- ('../../AppData/Local/Pub/Cache/hosted/mirrors.tuna.tsinghua.edu.cn%2547dart-pub%2547/record_platform_interface-1.1.0/lib/src/types/record_config.dart').
-Try correcting the name to the name of an existing getter, or defining a getter or field named 'streamBufferSize'.
-          'streamBufferSize'.toJS: (config.streamBufferSize ?? 2048).toJS,
-                                           ^^^^^^^^^^^^^^^^
-Waiting for connection from debug service on Chrome...             30.3s
+
+                   ^
+    lib/theme/app_theme.dart:113:18: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+     - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('../programs/flutter/packages/flutter/lib/src/material/card_theme.dart').
+     - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('../programs/flutter/packages/flutter/lib/src/material/card_theme.dart').
+          cardTheme: CardTheme(
+                     ^
+    lib/theme/app_theme.dart:228:18: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+     - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('../programs/flutter/packages/flutter/lib/src/material/card_theme.dart').
+     - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('../programs/flutter/packages/flutter/lib/src/material/card_theme.dart').
+          cardTheme: CardTheme(
+                     ^
+    Target kernel_snapshot_program failed: Exception
+    Failed to package /Users/builder/clone.
+    Command PhaseScriptExecution failed with a nonzero exit code
+    note: Run script build phase 'Run Script' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+    note: Run script build phase 'Thin Binary' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Runner' from project 'Runner')
+
+Encountered error while archiving for device.
+
+
+Build failed :|
+Failed to build for iOS

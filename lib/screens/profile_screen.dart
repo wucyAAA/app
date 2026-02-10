@@ -319,16 +319,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: item.showDivider
-              ? Border(
-                  bottom: BorderSide(
-                    color: theme.dividerTheme.color ?? const Color(0xFFF2F2F7),
-                    width: 1,
-                  ),
-                )
-              : null,
-        ),
         child: Row(
           children: [
             Container(
@@ -385,11 +375,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(
                 LucideIcons.logOut,
                 size: 16,
@@ -420,7 +410,6 @@ class _SettingItem {
   final String title;
   final Widget? trailing;
   final VoidCallback onTap;
-  final bool showDivider;
 
   _SettingItem({
     required this.icon,
@@ -429,6 +418,5 @@ class _SettingItem {
     required this.title,
     this.trailing,
     required this.onTap,
-    this.showDivider = false,
   });
 }

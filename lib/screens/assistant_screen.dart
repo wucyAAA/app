@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -10,7 +9,6 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../api/voice_api.dart';
-import '../services/app_state.dart';
 import '../utils/toast_utils.dart';
 
 // 任务状态枚举
@@ -83,7 +81,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
   DateTime? _recordingStartTime;
   List<VoiceSession> sessions = [];
   String? editingTaskId;
-  Map<String, String> _tempParamValues = {}; // 备份参数值用于取消编辑
+  final Map<String, String> _tempParamValues = {}; // 备份参数值用于取消编辑
   final Map<String, TextEditingController> _paramControllers = {}; // 编辑模式下的控制器
 
   // 模拟模式：设为 true 可绕过麦克风，直接使用模拟音频测试
@@ -119,8 +117,9 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
   }
 
   Future<bool> _checkPermission() async {
-    if (kIsWeb)
+    if (kIsWeb) {
       return true; // Web handles permission via browser prompt on start()
+    }
 
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       // Desktop platforms might handle permissions differently or not support permission_handler fully
@@ -792,67 +791,6 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
   }
 
   // Removed _buildSystemBubble and _buildProcessingStatus as they are replaced.
-
-  Widget _buildSessionItem(VoiceSession session, ThemeData theme, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 用户语音识别结果
-        Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color:
-                    isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    LucideIcons.messageSquare,
-                    size: 14,
-                    color: theme.textTheme.bodySmall?.color,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '识别结果',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.textTheme.bodySmall?.color,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                session.text,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  color: theme.textTheme.bodyLarge?.color,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 解析出的任务卡片
-        ...session.tasks.map((task) => _buildTaskCard(task, theme, isDark)),
-
-        // 分隔
-        if (sessions.last != session)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: theme.dividerTheme.color?.withOpacity(0.5)),
-          ),
-      ],
-    );
-  }
 
   Widget _buildEmptyState(ThemeData theme, bool isDark) {
     return Padding(

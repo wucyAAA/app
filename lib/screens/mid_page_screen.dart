@@ -28,7 +28,7 @@ class MidPageScreen extends StatefulWidget {
 
 class _MidPageScreenState extends State<MidPageScreen> {
   bool _spinning = true;
-  List<String> _imageUrls = [];
+  final List<String> _imageUrls = [];
   Map<String, dynamic>? _twitterData;
   String? _htmlContent;
   Timer? _timer;
@@ -89,11 +89,9 @@ class _MidPageScreenState extends State<MidPageScreen> {
         });
       } else {
         // Polling if status not ok
-        if (_timer == null) {
-          _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-            _doFetch();
-          });
-        }
+        _timer ??= Timer.periodic(const Duration(seconds: 2), (timer) {
+          _doFetch();
+        });
       }
     } else {
       // Error handling

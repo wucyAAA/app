@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';

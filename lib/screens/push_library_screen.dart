@@ -221,40 +221,6 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
     );
   }
 
-  Color _getTypeBadgeBgColor(String type, bool isDark) {
-    switch (type) {
-      case 'user':
-        return isDark ? const Color(0xFF172554) : const Color(0xFFEFF6FF);
-      case 'system':
-        return isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
-      case 'product':
-        return isDark ? const Color(0xFF431407) : const Color(0xFFFFF7ED);
-      case 'highly_recommend':
-        return isDark ? const Color(0xFF3B0764) : const Color(0xFFFAF5FF);
-      case 'ai_recommend':
-        return isDark ? const Color(0xFF2E1065) : const Color(0xFFF5F3FF); // Violet
-      default:
-        return isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
-    }
-  }
-
-  Color _getTypeBadgeTextColor(String type, bool isDark) {
-    switch (type) {
-      case 'user':
-        return isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8);
-      case 'system':
-        return isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D);
-      case 'product':
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFC2410C);
-      case 'highly_recommend':
-        return isDark ? const Color(0xFFC084FC) : const Color(0xFF7C3AED);
-      case 'ai_recommend':
-        return isDark ? const Color(0xFFA78BFA) : const Color(0xFF6D28D9);
-      default:
-        return isDark ? const Color(0xFFD1D5DB) : const Color(0xFF3C3C43);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -695,7 +661,6 @@ class _FilterModalState extends State<FilterModal> {
         isStart ? (startDate ?? DateTime.now()) : (endDate ?? DateTime.now());
     
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
