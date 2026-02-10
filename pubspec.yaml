@@ -69,6 +69,9 @@ dependencies:
   webview_flutter: ^4.10.0
     # 或者完全移除，因为这是 iOS 应用
 
+dependency_overrides:
+  record_platform_interface: 1.4.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
