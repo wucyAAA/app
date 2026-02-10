@@ -164,10 +164,6 @@ class NewsOperationResult {
 class NewsApi {
   /// 推送新闻
   static Future<NewsOperationResult> pushNews({required int id}) async {
-    return NewsOperationResult(
-      success: false,
-      message: '暂时屏蔽',
-    );
     try {
       final response = await http.post(
         'news/push',
@@ -286,7 +282,7 @@ class NewsApi {
         final body = response.data as Map<String, dynamic>;
         // API 响应结构: code, data: { status: 'ok', data: {...}, url: [...] }
         // 注意：Vue 代码中是 res.data.data -> data
-        
+
         if (body['code'] == 200) {
           final data = body['data'];
           if (data != null) {
@@ -297,9 +293,7 @@ class NewsApi {
           }
         }
         return MidPageResult(
-          success: false, 
-          message: body['message'] ?? '获取数据失败'
-        );
+            success: false, message: body['message'] ?? '获取数据失败');
       } else {
         return MidPageResult(success: false, message: response.message);
       }
@@ -360,10 +354,10 @@ class MidPageData {
     if (target['url'] != null && target['url'] is List) {
       urlList = (target['url'] as List).map((e) => e.toString()).toList();
     } else if (json['url'] != null && json['url'] is List) {
-       // 兼容性检查
-       urlList = (json['url'] as List).map((e) => e.toString()).toList();
+      // 兼容性检查
+      urlList = (json['url'] as List).map((e) => e.toString()).toList();
     }
-    
+
     return MidPageData(
       status: target['status'] ?? json['status'] ?? '',
       waiting: target['waiting'] ?? json['waiting'] ?? 0,

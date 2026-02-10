@@ -3,7 +3,7 @@ description: HuanYun - 金融资讯推送 iOS 应用，包含即时快讯、短�
 
 publish_to: 'none'
 
-version: 1.0.0+3
+version: 1.0.5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -69,8 +69,6 @@ dependencies:
   webview_flutter: ^4.10.0
     # 或者完全移除，因为这是 iOS 应用
 
-dependency_overrides:
-  record_platform_interface: 1.1.0
 
 dev_dependencies:
   flutter_test:
