@@ -392,7 +392,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
           child: Row(
             children: [
               Expanded(
@@ -1086,6 +1086,19 @@ class CommentDetailModal extends StatelessWidget {
                                 data: comment.detailWithStyle
                                     .replaceAll('\n', '<br/>'),
                                 shrinkWrap: true,
+                                onLinkTap: (url, attributes, element) {
+                                  if (url != null && url.isNotEmpty) {
+                                    context.push(
+                                      Uri(
+                                        path: AppRoutes.webview,
+                                        queryParameters: {
+                                          'url': url,
+                                          'title': '详情'
+                                        },
+                                      ).toString(),
+                                    );
+                                  }
+                                },
                                 style: {
                                   "body": Style(
                                     fontSize: FontSize(16),

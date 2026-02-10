@@ -266,7 +266,7 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
           child: Row(
             children: [
               Expanded(
@@ -1050,7 +1050,7 @@ class PushDetailModal extends StatelessWidget {
   });
 
   Future<void> _launchUrl(BuildContext context, String? url) async {
-    if (url == null) return;
+    if (url == null || url.isEmpty) return;
 
     if (record.isMidPageType) {
       context.push(
@@ -1065,10 +1065,15 @@ class PushDetailModal extends StatelessWidget {
       return;
     }
 
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    }
+    context.push(
+      Uri(
+        path: AppRoutes.webview,
+        queryParameters: {
+          'url': url,
+          'title': '详情'
+        },
+      ).toString(),
+    );
   }
 
   @override

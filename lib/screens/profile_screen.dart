@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/app_state.dart';
 import '../router/app_router.dart';
 
@@ -13,6 +14,23 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = 'v${packageInfo.version}';
+      });
+    }
+  }
+
   void handleLogout() {
     // 处理退出登录逻辑
     context.read<AppState>().logout();
@@ -53,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: Row(
             children: [
               // 头像
@@ -136,21 +154,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-              // 右箭头
-              if (isLoggedIn)
-                GestureDetector(
-                  onTap: () {
-                    // 处理点击进入详情
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      LucideIcons.chevronRight,
-                      size: 20,
-                      color: theme.textTheme.bodyMedium?.color,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -181,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : const Color(0xFF6B7280),
                 title: '关于幻云APP',
                 trailing: Text(
-                  'v1.0.0',
+                  _version,
                   style: TextStyle(
                     fontSize: 13,
                     color: theme.textTheme.bodyMedium?.color,
@@ -343,15 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: theme.textTheme.bodyLarge,
               ),
             ),
-            if (item.trailing != null) ...[
-              item.trailing!,
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              LucideIcons.chevronRight,
-              size: 20,
-              color: theme.textTheme.bodyMedium?.color,
-            ),
+            if (item.trailing != null) item.trailing!,
           ],
         ),
       ),

@@ -269,7 +269,10 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
           child: Column(
             children: [
               Expanded(
-                child: _buildBody(theme),
+                child: SafeArea(
+                  bottom: false,
+                  child: _buildBody(theme),
+                ),
               ),
             ],
           ),
@@ -448,7 +451,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
         key: ValueKey(news.id),
         endActionPane: ActionPane(
           motion: const ScrollMotion(),
-          extentRatio: 0.4,
+          extentRatio: 0.5,
           children: [
             SlidableAction(
               onPressed: (_) => _copyToClipboard(news.titleRaw),

@@ -569,7 +569,10 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
             children: [
               // Content Area
               Expanded(
-                child: _buildContentArea(theme, isDark),
+                child: SafeArea(
+                  bottom: false,
+                  child: _buildContentArea(theme, isDark),
+                ),
               ),
               // 录音按钮
               _buildRecordButton(isDark),

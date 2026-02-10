@@ -194,27 +194,34 @@ class _MidPageScreenState extends State<MidPageScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('详情'),
+        title: const Text('详情', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: theme.cardTheme.color,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(bottom: BorderSide(color: theme.dividerTheme.color ?? const Color(0xFFE5E5EA), width: 0.5)),
         actions: [
           if (_isBloomberg)
             TextButton(
               onPressed: _reportErr,
-              child: const Text('报错', style: TextStyle(color: Colors.red)),
+              child: const Text('报错', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
             ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Watermarks
-          const Positioned.fill(child: WatermarkWidget(text: '内部资料', color: Color(0x1A1890FF))),
-          const Positioned.fill(child: WatermarkWidget(text: '请勿外传', color: Color(0x1A1890FF), offset: 50)),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Watermarks
+            const Positioned.fill(child: WatermarkWidget(text: '内部资料', color: Color(0x1A1890FF))),
+            const Positioned.fill(child: WatermarkWidget(text: '请勿外传', color: Color(0x1A1890FF), offset: 50)),
 
-          // Content
-          if (_spinning)
-            _buildLoading()
-          else
-            _buildContent(theme),
-        ],
+            // Content
+            if (_spinning)
+              _buildLoading()
+            else
+              _buildContent(theme),
+          ],
+        ),
       ),
     );
   }

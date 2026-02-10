@@ -123,7 +123,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_pageTitle),
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Theme.of(context).cardTheme.color,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(bottom: BorderSide(color: Theme.of(context).dividerTheme.color ?? const Color(0xFFE5E5EA), width: 0.5)),
         bottom: (_isLoading && _isSupported)
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(2.0),
@@ -131,7 +141,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               )
             : null,
       ),
-      body: body,
+      body: SafeArea(child: body),
     );
   }
 }

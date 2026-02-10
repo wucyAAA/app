@@ -3,7 +3,7 @@ description: HuanYun - 金融资讯推送 iOS 应用，包含即时快讯、短�
 
 publish_to: 'none'
 
-version: 1.0.5
+version: 1.0.6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -67,6 +67,7 @@ dependencies:
   fluttertoast: 8.2.4
   flutter_slidable: ^3.0.1
   webview_flutter: ^4.10.0
+  package_info_plus: ^9.0.0
     # 或者完全移除，因为这是 iOS 应用
 
 
@@ -75,8 +76,27 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/favicon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/favicon.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  windows:
+    generate: true
+    image_path: "assets/favicon.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/favicon.png"
