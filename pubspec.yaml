@@ -86,17 +86,18 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/favicon.png"
+  image_path: "assets/icon_opaque.png"
+  remove_alpha_ios: true
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "assets/favicon.png"
+    image_path: "assets/icon_opaque.png"
     background_color: "#ffffff"
     theme_color: "#ffffff"
   windows:
     generate: true
-    image_path: "assets/favicon.png"
+    image_path: "assets/icon_opaque.png"
     icon_size: 48
   macos:
     generate: true
-    image_path: "assets/favicon.png"
+    image_path: "assets/icon_opaque.png"
