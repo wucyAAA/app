@@ -1015,7 +1015,8 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
         (lowerKey.contains('time') || lowerKey.contains('时间'));
 
     // 3. 判断是否为日期 (Date)
-    final isDateParam = !isDateTimeParam && !isTimeParam &&
+    final isDateParam = !isDateTimeParam &&
+        !isTimeParam &&
         (lowerKey.contains('date') ||
             lowerKey.contains('day') ||
             lowerKey.contains('deadline') ||
@@ -1036,22 +1037,27 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
         onTap: () async {
           DateTime initialDate = DateTime.now();
           if (isTimeParam) {
-            // 解析时间 HH:mm
+            // 先尝试解析完整时间，失败则尝试解析 HH:mm
             try {
-              final parts = param.value.split(':');
-              if (parts.length == 2) {
-                final now = DateTime.now();
-                initialDate = DateTime(now.year, now.month, now.day,
-                    int.parse(parts[0]), int.parse(parts[1]));
-              }
-            } catch (_) {}
+              String sanitizedValue = param.value.replaceAll('/', '-');
+              initialDate = DateTime.parse(sanitizedValue);
+            } catch (_) {
+              try {
+                final parts = param.value.split(':');
+                if (parts.length == 2) {
+                  final now = DateTime.now();
+                  initialDate = DateTime(now.year, now.month, now.day,
+                      int.parse(parts[0]), int.parse(parts[1]));
+                }
+              } catch (_) {}
+            }
           } else if (isDateTimeParam) {
             // 解析日期时间 YYYY-MM-DD HH:mm
             try {
               String sanitizedValue = param.value.replaceAll('/', '-');
               // 简单尝试解析
               if (sanitizedValue.isNotEmpty) {
-                 initialDate = DateTime.parse(sanitizedValue);
+                initialDate = DateTime.parse(sanitizedValue);
               }
             } catch (_) {}
           } else {
@@ -1106,10 +1112,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
                               // ... (校验逻辑略，如果需要可以保留或扩展)
 
                               setState(() {
-                                if (isTimeParam) {
-                                  param.value =
-                                      "${tempPickedDate.hour.toString().padLeft(2, '0')}:${tempPickedDate.minute.toString().padLeft(2, '0')}";
-                                } else if (isDateTimeParam) {
+                                if (isTimeParam || isDateTimeParam) {
                                   param.value =
                                       "${tempPickedDate.year}-${tempPickedDate.month.toString().padLeft(2, '0')}-${tempPickedDate.day.toString().padLeft(2, '0')} ${tempPickedDate.hour.toString().padLeft(2, '0')}:${tempPickedDate.minute.toString().padLeft(2, '0')}";
                                 } else {
@@ -1126,14 +1129,12 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
                     // Picker
                     Expanded(
                       child: CupertinoDatePicker(
-                        mode: isDateTimeParam
+                        mode: (isDateTimeParam || isTimeParam)
                             ? CupertinoDatePickerMode.dateAndTime
-                            : (isTimeParam
-                                ? CupertinoDatePickerMode.time
-                                : CupertinoDatePickerMode.date),
+                            : CupertinoDatePickerMode.date,
                         initialDateTime: initialDate,
-                        minimumDate: isTimeParam ? null : DateTime(2000),
-                        maximumDate: isTimeParam ? null : DateTime(2100),
+                        minimumDate: DateTime(2000),
+                        maximumDate: DateTime(2100),
                         use24hFormat: true,
                         onDateTimeChanged: (DateTime newDate) {
                           tempPickedDate = newDate;
@@ -1158,16 +1159,12 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
             children: [
               Text(
                 param.value.isEmpty
-                    ? (isDateTimeParam ? '选择日期时间' : (isTimeParam ? '选择时间' : '选择日期'))
+                    ? ((isDateTimeParam || isTimeParam) ? '选择日期时间' : '选择日期')
                     : param.value,
                 style: TextStyle(fontSize: 13, color: textColor),
               ),
-              Icon(
-                  isTimeParam
-                      ? LucideIcons.clock
-                      : LucideIcons.calendar,
-                  size: 16,
-                  color: textColor.withOpacity(0.6)),
+              Icon(isTimeParam ? LucideIcons.clock : LucideIcons.calendar,
+                  size: 16, color: textColor.withOpacity(0.6)),
             ],
           ),
         ),
