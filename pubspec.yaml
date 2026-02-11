@@ -3,7 +3,7 @@ description: HuanYun - 金融资讯推送 iOS 应用，包含即时快讯、短�
 
 publish_to: 'none'
 
-version: 1.0.8
+version: 1.0.9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -28,7 +28,7 @@ dependencies:
   provider: ^6.1.1
 
   # 日期格式化 - 使用灵活版本
-  # intl: ^0.19.0
+  intl: ^0.19.0
 
   # 本地存储
   shared_preferences: ^2.2.2
