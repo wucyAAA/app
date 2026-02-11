@@ -33,7 +33,15 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   Future<void> _initializeVideo() async {
     try {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      final uri = Uri.parse(widget.videoUrl);
+      _controller = VideoPlayerController.networkUrl(
+        uri,
+        httpHeaders: {
+          'Referer': uri.origin,
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+        },
+      );
       await _controller!.initialize();
       // 跳到第一帧并暂停
       await _controller!.seekTo(Duration.zero);

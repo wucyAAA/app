@@ -5,6 +5,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../api/push_api.dart';
 import '../router/app_router.dart';
 
@@ -1248,11 +1249,16 @@ class PushDetailModal extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  record.link,
+                                child: CachedNetworkImage(
+                                  imageUrl: record.link,
+                                  httpHeaders: {
+                                    'Referer': Uri.parse(record.link).origin,
+                                    'User-Agent':
+                                        'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                                  },
                                   width: double.infinity,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  errorWidget: (context, error, stackTrace) =>
                                       Container(
                                     width: double.infinity,
                                     height: 200,

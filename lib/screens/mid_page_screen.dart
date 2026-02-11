@@ -273,6 +273,11 @@ class _MidPageScreenState extends State<MidPageScreen> {
         itemBuilder: (context, index) {
           return CachedNetworkImage(
             imageUrl: _imageUrls[index],
+            httpHeaders: {
+              'Referer': Uri.parse(_imageUrls[index]).origin,
+              'User-Agent':
+                  'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+            },
             placeholder: (context, url) => const SizedBox(
               height: 200, 
               child: Center(child: CupertinoActivityIndicator())
@@ -303,11 +308,17 @@ class _MidPageScreenState extends State<MidPageScreen> {
                     if (_twitterData!['type'] != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          _twitterData!['type'],
+                        child: CachedNetworkImage(
+                          imageUrl: _twitterData!['type'],
+                          httpHeaders: {
+                            'Referer': Uri.parse(_twitterData!['type']).origin,
+                            'User-Agent':
+                                'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                          },
                           width: 40,
                           height: 40,
-                          errorBuilder: (ctx, err, stack) => const Icon(Icons.person, size: 40),
+                          errorWidget: (ctx, err, stack) =>
+                              const Icon(Icons.person, size: 40),
                         ),
                       ),
                     const SizedBox(width: 12),
@@ -336,10 +347,20 @@ class _MidPageScreenState extends State<MidPageScreen> {
                 if (_twitterData!['link'] != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      _twitterData!['link'],
+                    child: CachedNetworkImage(
+                      imageUrl: _twitterData!['link'],
+                      httpHeaders: {
+                        'Referer': Uri.parse(_twitterData!['link']).origin,
+                        'User-Agent':
+                            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                      },
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) => const SizedBox(
+                          height: 200,
+                          child: Center(child: CupertinoActivityIndicator())),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                     ),
                   ),
                 const SizedBox(height: 10),

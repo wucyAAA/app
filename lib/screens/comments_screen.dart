@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../api/comment_api.dart';
 import '../router/app_router.dart';
 import '../utils/toast_utils.dart';
@@ -309,9 +310,22 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 child: InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,
-                  child: Image.network(
-                    imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    httpHeaders: {
+                      'Referer': Uri.parse(imageUrl).origin,
+                      'User-Agent':
+                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                    },
                     fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CupertinoActivityIndicator(radius: 16),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
+                    ),
                   ),
                 ),
               ),
@@ -674,16 +688,29 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           child: comment.url.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    comment.url,
+                                  child: CachedNetworkImage(
+                                    imageUrl: comment.url,
+                                    httpHeaders: {
+                                      'Referer': Uri.parse(comment.url).origin,
+                                      'User-Agent':
+                                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                                    },
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
+                                    placeholder: (context, url) => Container(
+                                      color: isDark
+                                          ? const Color(0xFF374151)
+                                          : const Color(0xFFE5E5EA),
+                                      child: const Center(
+                                          child: CupertinoActivityIndicator()),
+                                    ),
+                                    errorWidget: (context, url, error) =>
                                         Center(
                                       child: Icon(
                                         LucideIcons.image,
                                         size: 32,
-                                        color: theme.textTheme.bodySmall?.color ??
-                                            const Color(0xFF8E8E93),
+                                        color:
+                                            theme.textTheme.bodySmall?.color ??
+                                                const Color(0xFF8E8E93),
                                       ),
                                     ),
                                   ),
@@ -903,9 +930,22 @@ class CommentDetailModal extends StatelessWidget {
                 child: InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,
-                  child: Image.network(
-                    imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    httpHeaders: {
+                      'Referer': Uri.parse(imageUrl).origin,
+                      'User-Agent':
+                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                    },
                     fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CupertinoActivityIndicator(radius: 16),
+                    ),
+                    errorWidget: (context, url, error) => const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
+                    ),
                   ),
                 ),
               ),
@@ -1136,41 +1176,41 @@ class CommentDetailModal extends StatelessWidget {
                                           child: ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(8),
-                                            child: Image.network(
-                                              src,
+                                            child: CachedNetworkImage(
+                                              imageUrl: src,
+                                              httpHeaders: {
+                                                'Referer':
+                                                    Uri.parse(src).origin,
+                                                'User-Agent':
+                                                    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                                              },
                                               fit: BoxFit.fitWidth,
-                                              loadingBuilder: (context, child,
-                                                  loadingProgress) {
-                                                if (loadingProgress == null) {
-                                                  return child;
-                                                }
-                                                return Container(
-                                                  height: 200,
-                                                  color: isDark
-                                                      ? const Color(0xFF374151)
-                                                      : const Color(0xFFF2F2F7),
-                                                  child: const Center(
-                                                    child:
-                                                        CupertinoActivityIndicator(),
-                                                  ),
-                                                );
-                                              },
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return Container(
-                                                  height: 200,
-                                                  color: isDark
-                                                      ? const Color(0xFF374151)
-                                                      : const Color(0xFFF2F2F7),
-                                                  alignment: Alignment.center,
-                                                  child: Icon(
-                                                    LucideIcons.imageOff,
-                                                    color: theme.textTheme
-                                                            .bodySmall?.color ??
-                                                        const Color(0xFF8E8E93),
-                                                  ),
-                                                );
-                                              },
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                height: 200,
+                                                color: isDark
+                                                    ? const Color(0xFF374151)
+                                                    : const Color(0xFFF2F2F7),
+                                                child: const Center(
+                                                  child:
+                                                      CupertinoActivityIndicator(),
+                                                ),
+                                              ),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      Container(
+                                                height: 200,
+                                                color: isDark
+                                                    ? const Color(0xFF374151)
+                                                    : const Color(0xFFF2F2F7),
+                                                alignment: Alignment.center,
+                                                child: Icon(
+                                                  LucideIcons.imageOff,
+                                                  color: theme.textTheme
+                                                          .bodySmall?.color ??
+                                                      const Color(0xFF8E8E93),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ),
