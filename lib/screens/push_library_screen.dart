@@ -56,6 +56,7 @@ class _PushLibraryScreenState extends State<PushLibraryScreen> {
 
   Future<void> _loadData({bool isRefresh = true}) async {
     if (isRefresh) {
+      _refreshController.resetNoData();
       setState(() {
         _isLoading = true;
         _errorMessage = null;

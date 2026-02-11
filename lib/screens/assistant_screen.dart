@@ -9,62 +9,13 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/app_state.dart';
 import '../api/voice_api.dart';
 import '../utils/toast_utils.dart';
-
-// 任务状态枚举
-enum TaskStatus { generated, confirmed, executing, completed, failed }
-
-// 任务参数模型
-class TaskParam {
-  final String key;
-  String value;
-  final List<String>? options;
-
-  TaskParam({
-    required this.key,
-    required this.value,
-    this.options,
-  });
-}
-
-// 任务数据模型
-class Task {
-  final String id; // 本地唯一ID
-  final String taskId; // 服务端返回的 batch task_id
-  final String type;
-  String description;
-  final List<TaskParam> parameters;
-  TaskStatus status;
-  VoiceFunction rawFunction; // 原始数据，用于执行时回传
-  bool isExpanded;
-
-  Task({
-    required this.id,
-    required this.taskId,
-    required this.type,
-    required this.description,
-    required this.parameters,
-    required this.status,
-    required this.rawFunction,
-    this.isExpanded = true,
-  });
-}
-
-// 会话数据模型
-class VoiceSession {
-  final String id;
-  final String text; // 语音转文字结果
-  final List<Task> tasks; // 解析出的任务列表
-  final DateTime timestamp;
-
-  VoiceSession({
-    required this.id,
-    required this.text,
-    required this.tasks,
-    required this.timestamp,
-  });
-}
+import '../models/voice_assistant_models.dart';
+import 'assistant_search_screen.dart';
 
 class VoiceAssistantScreen extends StatefulWidget {
   const VoiceAssistantScreen({super.key});
@@ -78,9 +29,11 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
   bool isRecording = false;
   bool isProcessing = false; // 处理中状态
   bool _isCanceling = false; // 取消状态
+  bool _isTouching = false; // 是否正在按住
   String recordingText = '';
   DateTime? _recordingStartTime;
   List<VoiceSession> sessions = [];
+  List<VoiceSession> historySessions = [];
   String? editingTaskId;
   final Map<String, String> _tempParamValues = {}; // 备份参数值用于取消编辑
   final Map<String, TextEditingController> _paramControllers = {}; // 编辑模式下的控制器
@@ -96,6 +49,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
   @override
   void initState() {
     super.initState();
+    _loadHistory();
     _audioRecorder = AudioRecorder();
     _scrollController = ScrollController();
     _bounceController = AnimationController(
@@ -108,12 +62,56 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
     )..repeat();
   }
 
+  Future<void> _loadHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyJson = prefs.getStringList('voice_history') ?? [];
+      if (!mounted) return;
+      setState(() {
+        historySessions = historyJson
+            .map((e) => VoiceSession.fromJson(jsonDecode(e)))
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('Error loading history: $e');
+    }
+  }
+
+  Future<void> _saveSession(VoiceSession session) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final updatedHistory = List<VoiceSession>.from(historySessions);
+      updatedHistory.insert(0, session);
+      if (updatedHistory.length > 30) {
+        updatedHistory.removeLast();
+      }
+
+      if (mounted) {
+        setState(() {
+          historySessions = updatedHistory;
+        });
+      }
+
+      final historyJson = updatedHistory
+          .map((e) => jsonEncode(e.toJson()))
+          .toList();
+      await prefs.setStringList('voice_history', historyJson);
+    } catch (e) {
+      debugPrint('Error saving history: $e');
+    }
+  }
+
   @override
   void dispose() {
     _audioRecorder.dispose();
     _bounceController.dispose();
     _spinController.dispose();
     _scrollController.dispose();
+    for (final controller in _paramControllers.values) {
+      controller.dispose();
+    }
+    _paramControllers.clear();
     super.dispose();
   }
 
@@ -136,6 +134,11 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
 
   // 录音开始
   Future<void> handleTouchStart() async {
+    if (isProcessing || isRecording) {
+      ToastUtils.show('正在处理，请稍候');
+      return;
+    }
+
     // 模拟模式：直接进入录音状态，不需要麦克风
     if (_debugMockMode) {
       setState(() {
@@ -150,6 +153,11 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
     final hasPermission = await _checkPermission();
     if (!hasPermission) {
       ToastUtils.showWarning('需要麦克风权限才能使用语音功能');
+      return;
+    }
+
+    // 如果在请求权限过程中松手了，则不开始录音
+    if (!_isTouching) {
       return;
     }
 
@@ -296,6 +304,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
             sessions.add(session); // 改为追加到末尾
             recordingText = ''; // 清除临时状态文本
           });
+          _saveSession(session);
           _scrollToBottom();
         }
       } else {
@@ -543,6 +552,227 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
     }
   }
 
+  Widget _buildDrawer(ThemeData theme, bool isDark) {
+    final groupedSessions = _groupSessions();
+
+    return Drawer(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header & New Chat Button area
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // App Title Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '幻云助手',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      // Search Icon (Visual only)
+                      IconButton(
+                        icon: Icon(
+                          LucideIcons.search,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
+                        onPressed: () async {
+                          // Navigate to search screen
+                          final result = await Navigator.push<VoiceSession>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AssistantSearchScreen(
+                                historySessions: historySessions,
+                              ),
+                            ),
+                          );
+
+                          if (result != null && mounted) {
+                            Navigator.pop(context); // Close drawer
+                            setState(() {
+                              sessions.clear();
+                              sessions.add(result);
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // New Chat Button
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      setState(() {
+                        sessions.clear();
+                        recordingText = '';
+                        editingTaskId = null;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1F2937)
+                            : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.plus,
+                            size: 20,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '新建对话',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+
+            // 2. History List
+            Expanded(
+              child: groupedSessions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.messageSquare,
+                            size: 48,
+                            color: theme.dividerColor,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            '暂无历史记录',
+                            style: TextStyle(
+                              color: theme.textTheme.bodySmall?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: groupedSessions.entries.expand((entry) {
+                        return [
+                          _buildGroupHeader(entry.key, theme),
+                          ...entry.value.map((session) =>
+                              _buildHistoryItem(session, theme, isDark)),
+                        ];
+                      }).toList(),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, List<VoiceSession>> _groupSessions() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final lastWeek = today.subtract(const Duration(days: 7));
+
+    final groups = <String, List<VoiceSession>>{
+      '今天': [],
+      '昨天': [],
+      '最近七天': [],
+      '更早': [],
+    };
+
+    for (var session in historySessions) {
+      final date = session.timestamp;
+      final day = DateTime(date.year, date.month, date.day);
+
+      if (day == today) {
+        groups['今天']!.add(session);
+      } else if (day == yesterday) {
+        groups['昨天']!.add(session);
+      } else if (day.isAfter(lastWeek)) {
+        groups['最近七天']!.add(session);
+      } else {
+        groups['更早']!.add(session);
+      }
+    }
+
+    // Remove empty groups
+    groups.removeWhere((key, value) => value.isEmpty);
+    return groups;
+  }
+
+  Widget _buildGroupHeader(String title, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: theme.textTheme.bodySmall?.color ?? const Color(0xFF9CA3AF),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(
+      VoiceSession session, ThemeData theme, bool isDark) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        setState(() {
+          sessions.clear();
+          sessions.add(session);
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                session.text.isEmpty ? '无标题会话' : session.text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: theme.textTheme.bodyMedium?.color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -550,6 +780,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: _buildDrawer(theme, isDark),
       body: Center(
         child: Container(
           width: double.infinity,
@@ -568,12 +799,39 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
           ),
           child: Column(
             children: [
+              // Header with Menu Button
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Builder(
+                        builder: (context) => IconButton(
+                          icon: Icon(
+                            LucideIcons.menu,
+                            color: theme.textTheme.bodyLarge?.color,
+                          ),
+                          onPressed: () => Scaffold.of(context).openDrawer(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '语音助手',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               // Content Area
               Expanded(
-                child: SafeArea(
-                  bottom: false,
-                  child: _buildContentArea(theme, isDark),
-                ),
+                child: _buildContentArea(theme, isDark),
               ),
               // 录音按钮
               _buildRecordButton(isDark),
@@ -1475,8 +1733,12 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
           ),
           const SizedBox(height: 8),
           GestureDetector(
-            onPanDown: (_) => handleTouchStart(),
+            onPanDown: (_) {
+              _isTouching = true;
+              handleTouchStart();
+            },
             onPanUpdate: (details) {
+              if (!_isTouching) return;
               // 向上滑动超过一定距离触发取消状态
               if (details.localPosition.dy < -60) {
                 if (!_isCanceling) setState(() => _isCanceling = true);
@@ -1485,13 +1747,17 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
               }
             },
             onPanEnd: (_) {
+              _isTouching = false;
               if (_isCanceling) {
                 _cancelRecording();
               } else {
                 handleTouchEnd();
               }
             },
-            onPanCancel: () => _cancelRecording(),
+            onPanCancel: () {
+              _isTouching = false;
+              _cancelRecording();
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               width: 64,

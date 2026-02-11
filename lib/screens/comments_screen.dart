@@ -38,15 +38,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
   String selectedTimeRange = '全部'; // Default to "All"
   DateTime? startDate;
   DateTime? endDate;
-  List<String> selectedGroups = [];
   List<String> selectedUserTypes = [];
 
   bool get _hasActiveFilters {
     return selectedTimeRange != '全部' ||
         startDate != null ||
         endDate != null ||
-        selectedUserTypes.isNotEmpty ||
-        selectedGroups.isNotEmpty;
+        selectedUserTypes.isNotEmpty;
   }
 
   @override
@@ -123,6 +121,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
   /// 加载数据
   Future<void> _loadData({bool isRefresh = true}) async {
     if (isRefresh) {
+      // 重置刷新控制器状态，避免之前是"没有更多数据"导致无法上拉
+      _refreshController.resetNoData();
       setState(() {
         _isLoading = true;
         _errorMessage = null;
@@ -281,14 +281,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
         initialTimeRange: selectedTimeRange,
         initialStartDate: startDate,
         initialEndDate: endDate,
-        initialGroups: selectedGroups,
         initialUserTypes: selectedUserTypes,
-        onConfirm: (timeRange, start, end, groups, userTypes) {
+        onConfirm: (timeRange, start, end, userTypes) {
           setState(() {
             selectedTimeRange = timeRange;
             startDate = start;
             endDate = end;
-            selectedGroups = groups;
             selectedUserTypes = userTypes;
           });
           Navigator.pop(context);
@@ -1410,9 +1408,8 @@ class FilterModal extends StatefulWidget {
   final String initialTimeRange;
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
-  final List<String> initialGroups;
   final List<String> initialUserTypes;
-  final Function(String, DateTime?, DateTime?, List<String>, List<String>)
+  final Function(String, DateTime?, DateTime?, List<String>)
       onConfirm;
 
   const FilterModal({
@@ -1420,7 +1417,6 @@ class FilterModal extends StatefulWidget {
     required this.initialTimeRange,
     this.initialStartDate,
     this.initialEndDate,
-    required this.initialGroups,
     required this.initialUserTypes,
     required this.onConfirm,
   });
@@ -1433,7 +1429,6 @@ class _FilterModalState extends State<FilterModal> {
   late String selectedTimeRange;
   DateTime? startDate;
   DateTime? endDate;
-  late List<String> selectedGroups;
   late List<String> selectedUserTypes;
 
   final List<String> timeRanges = ['今天', '近3天', '最近7天', '最近30天', '最近3个月'];
@@ -1446,7 +1441,6 @@ class _FilterModalState extends State<FilterModal> {
     selectedTimeRange = widget.initialTimeRange;
     startDate = widget.initialStartDate;
     endDate = widget.initialEndDate;
-    selectedGroups = List.from(widget.initialGroups);
     selectedUserTypes = List.from(widget.initialUserTypes);
   }
 
@@ -1465,7 +1459,6 @@ class _FilterModalState extends State<FilterModal> {
       selectedTimeRange = '全部';
       startDate = null;
       endDate = null;
-      selectedGroups = [];
       selectedUserTypes = [];
     });
     // 重置后自动触发数据更新
@@ -1473,7 +1466,6 @@ class _FilterModalState extends State<FilterModal> {
       '全部',
       null,
       null,
-      [],
       [],
     );
   }
@@ -1774,7 +1766,6 @@ class _FilterModalState extends State<FilterModal> {
                           selectedTimeRange,
                           startDate,
                           endDate,
-                          selectedGroups,
                           selectedUserTypes,
                         ),
                         child: Container(

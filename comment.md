@@ -1,46 +1,7 @@
-            {
-                "id": 6531210,
-                "time": "2026-02-10 19:02:19",
-                "source": 1,
-                "source_id": 4500665,
-                "seed_id": 10197,
-                "type": "research",
-                "content_type": "card",
-                "title": "",
-                "content": "全国房价止跌信号初现 \u003ca href=\"https://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd\" target=\"_blank\"\u003ehttps://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd\u003c/a\u003e",
-                "organization": "国联民生地产物业交流Ⅱ群",
-                "author": "方鹏@国联民生地产",
-                "status": "normal",
-                "creator": 0,
-                "raw_type": "card",
-                "is_private": false,
-                "is_hot": false,
-                "is_optimistic": false,
-                "code": null,
-                "owner": "",
-                "recent_performance": "",
-                "stock": [],
-                "has_dup": false,
-                "detail_with_style": "全国房价止跌信号初现 \u003ca href=\"https://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd\" target=\"_blank\"\u003ehttps://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd\u003c/a\u003e",
-                "url": "https://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd",
-                "file_name": "",
-                "tag": 1,
-                "raw": "全国房价止跌信号初现  https://mp.weixin.qq.com/s?__biz=MjM5NDU5NTM4MQ==\u0026mid=2653718520\u0026idx=1\u0026sn=2674a3b59cfc8884f392bf0c955aad34\u0026chksm=bca7789e8532ed736758138a8adbb7aea051c6da74d47cdf91bacca9565436b606bbbf2de856\u0026mpshare=1\u0026scene=1\u0026srcid=0210Ota26XhlIsks8SRfUcwF\u0026sharer_shareinfo=cbf5dcbad0325519729899de303cbebd\u0026sharer_shareinfo_first=6ce7308c111dffec32223d20e804b413#rd",
-                "text": "",
-                "push": false,
-                "click": false,
-                "dup": false,
-                "zsxq": false,
-                "keywords": [],
-                "tags": [],
-                "remark": [],
-                "external": "",
-                "category_report": "",
-                "extra": "",
-                "abstract": "",
-                "acquire": "",
-                "industry": "",
-                "report": "",
-                "event": "",
-                "structure": ""
-            }
+• - lib/screens/comments_screen.dart:124-158 启动新搜索/筛选时复用 _loadData，但这里没有像 _onRefresh 一样调用
+    _refreshController.resetNoData()（对比 lib/screens/comments_screen.dart:190-194）。如果用户在旧数据里已经触发过       
+    loadNoData()，SmartRefresher 会维持“没有更多”状态，新的搜索结果即使还有下一页也无法上拉加载，必须手动下拉一次才会恢   
+    复。建议在每次重新拉取第一页前先 resetNoData()。
+  - lib/screens/comments_screen.dart:37-41, 274-297, 1471-1478 维护了 selectedGroups 并在筛选回调中传递，但筛选面板没有任 
+    何群组选项，API 请求也未使用该参数（CommentApi.getList 调用处仅传 time/tags/keyword）。当前群组筛选形同虚设，若业务需 
+    要该维度，需补齐 UI 与请求参数。
