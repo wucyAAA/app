@@ -20,6 +20,7 @@ class WebViewScreen extends StatefulWidget {
 class _WebViewScreenState extends State<WebViewScreen> {
   WebViewController? _controller;
   bool _isLoading = true;
+  bool _isError = false;
   String _pageTitle = '';
   bool _isSupported = true;
 
@@ -52,6 +53,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             if (mounted) {
               setState(() {
                 _isLoading = true;
+                _isError = false;
               });
             }
           },
@@ -72,13 +74,59 @@ class _WebViewScreenState extends State<WebViewScreen> {
               }
             }
           },
-          onWebResourceError: (WebResourceError error) {},
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('WebView Error: ${error.description}');
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _isError = true;
+              });
+            }
+          },
           onNavigationRequest: (NavigationRequest request) {
-            return NavigationDecision.navigate;
+            final uri = Uri.parse(request.url);
+            final scheme = uri.scheme.toLowerCase();
+
+            // 允许标准 Web 协议和资源协议
+            if (scheme == 'http' ||
+                scheme == 'https' ||
+                scheme == 'about' ||
+                scheme == 'data' ||
+                scheme == 'blob') {
+              return NavigationDecision.navigate;
+            }
+
+            // 其他协议（如 mailto, tel, 唤起 App 等）尝试使用系统方式打开
+            _launchExternalUrl(uri);
+            return NavigationDecision.prevent;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
+      );
+
+    final validUri = _getValidUri(widget.url);
+    _controller!.loadRequest(
+      validUri,
+      headers: {
+        // 许多网站有防盗链机制，检查 Referer。
+        // 将 Referer 设置为目标网站自身的 Origin，可以模拟站内跳转，绕过大部分防盗链。
+        'Referer': validUri.origin,
+      },
+    );
+  }
+
+  Uri _getValidUri(String url) {
+    Uri uri = Uri.parse(url);
+    if (!uri.hasScheme) {
+      // 如果没有协议头，默认添加 https
+      uri = Uri.parse('https://$url');
+    }
+    return uri;
+  }
+
+  Future<void> _launchExternalUrl(Uri uri) async {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
   }
 
   Future<void> _launchInBrowser() async {
@@ -113,6 +161,27 @@ class _WebViewScreenState extends State<WebViewScreen> {
               onPressed: _launchInBrowser,
               icon: const Icon(Icons.open_in_browser),
               label: const Text('在外部浏览器打开'),
+            ),
+          ],
+        ),
+      );
+    } else if (_isError) {
+      body = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              '加载失败',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                _controller?.reload();
+              },
+              child: const Text('点击重试'),
             ),
           ],
         ),

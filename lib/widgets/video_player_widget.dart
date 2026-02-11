@@ -31,7 +31,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Future<void> _initializePlayer() async {
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      final uri = _getValidUri(widget.videoUrl);
+
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        uri,
+        httpHeaders: {
+          // 伪造 Referer 和 User-Agent 以绕过部分防盗链限制
+          'Referer': uri.origin,
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+        },
+      );
+
       await _videoPlayerController.initialize();
 
       setState(() {
@@ -56,6 +66,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       });
       debugPrint('Error initializing video player: $e');
     }
+  }
+
+  Uri _getValidUri(String url) {
+    Uri uri = Uri.parse(url);
+    if (!uri.hasScheme) {
+      // 如果没有协议头，默认添加 https
+      uri = Uri.parse('https://$url');
+    }
+    return uri;
   }
 
   @override

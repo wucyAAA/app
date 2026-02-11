@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_router.dart';
 
+import '../services/app_state.dart';
+
 class MainShell extends StatelessWidget {
   final Widget child;
 
@@ -27,6 +29,14 @@ class MainShell extends StatelessWidget {
   }
 
   void _onTabTapped(BuildContext context, int index) {
+    final currentIndex = _getSelectedIndex(context);
+    
+    // 如果点击的是当前已选中的 Tab，发送通知
+    if (currentIndex == index) {
+      AppState.instance.notifyTabTap(index);
+      return;
+    }
+
     switch (index) {
       case 0:
         context.go(AppRoutes.news);

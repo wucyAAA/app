@@ -10,6 +10,8 @@ import '../api/news_api.dart';
 import '../router/app_router.dart';
 import '../utils/toast_utils.dart';
 
+import '../services/app_state.dart';
+
 class NewsFeedScreen extends StatefulWidget {
   const NewsFeedScreen({super.key});
 
@@ -24,6 +26,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
   List<NewsItem> _newsList = [];
   List<NewsItem> _pendingNews = []; // 暂存的新闻，不直接显示
   Timer? _pollTimer;
+  StreamSubscription? _tabTapSubscription;
 
   bool _isLoading = false;
   bool _hasError = false;
@@ -33,10 +36,28 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
   void initState() {
     super.initState();
     _loadInitialNews();
+    
+    // 监听 Tab 点击事件，实现双击回顶
+    _tabTapSubscription = AppState.instance.onTabTap.listen((index) {
+      if (index == 0 && mounted) {
+        // 如果有暂存消息，先显示暂存消息
+        if (_pendingNews.isNotEmpty) {
+          _showPendingNews();
+        } else {
+          // 否则直接滚动到顶部
+          _refreshController.position?.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _tabTapSubscription?.cancel();
     _stopPolling();
     _refreshController.dispose();
     super.dispose();
@@ -381,7 +402,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
         ),
         // 悬浮提示条 (Twitter 风格)
         Positioned(
-          top: 10,
+          top: 16,
           left: 0,
           right: 0,
           child: Center(
@@ -402,17 +423,17 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
                       child: Container(
                         key: const ValueKey('new_items_bubble'),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                          horizontal: 20,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1D9BF0), // Twitter Blue
-                          borderRadius: BorderRadius.circular(20),
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: theme.colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -421,16 +442,16 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
                           children: [
                             const Icon(
                               Icons.arrow_upward_rounded,
-                              size: 16,
+                              size: 18,
                               color: Colors.white,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             Text(
-                              '${_pendingNews.length} 条新快讯',
+                              '有 ${_pendingNews.length} 条新快讯，点击查看',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                                fontSize: 14,
                               ),
                             ),
                           ],

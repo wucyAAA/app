@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -78,6 +79,9 @@ class AppState extends ChangeNotifier {
   // 加载状态
   bool _isLoading = false;
 
+  // Tab 点击事件流
+  final _tabTapController = StreamController<int>.broadcast();
+
   // ==================== Getters ====================
 
   User? get user => _user;
@@ -88,6 +92,8 @@ class AppState extends ChangeNotifier {
   bool get notificationsEnabled => _notificationsEnabled;
   String get language => _language;
   bool get isLoading => _isLoading;
+  
+  Stream<int> get onTabTap => _tabTapController.stream;
 
   // ==================== 初始化 ====================
 
@@ -124,6 +130,13 @@ class AppState extends ChangeNotifier {
     _language = prefs.getString('language') ?? 'zh_CN';
 
     notifyListeners();
+  }
+
+  // ==================== 事件通知 ====================
+
+  /// 通知 Tab 点击
+  void notifyTabTap(int index) {
+    _tabTapController.add(index);
   }
 
   // ==================== 用户相关方法 ====================
