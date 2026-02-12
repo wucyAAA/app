@@ -1051,6 +1051,65 @@ class PushDetailModal extends StatelessWidget {
     required this.onClose,
   });
 
+  void _showImagePreview(BuildContext context, String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      httpHeaders: {
+                        'Referer': Uri.tryParse(imageUrl)?.origin ?? '',
+                        'User-Agent':
+                            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                      },
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(
+                        child: CupertinoActivityIndicator(radius: 16),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.x,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _launchUrl(BuildContext context, String? url) async {
     if (url == null || url.isEmpty) return;
 
@@ -1248,30 +1307,33 @@ class PushDetailModal extends StatelessWidget {
                           if (record.external == 'image' && record.link.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: CachedNetworkImage(
-                                  imageUrl: record.link,
-                                  httpHeaders: {
-                                    'Referer': Uri.parse(record.link).origin,
-                                    'User-Agent':
-                                        'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
-                                  },
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, error, stackTrace) =>
-                                      Container(
+                              child: GestureDetector(
+                                onTap: () => _showImagePreview(context, record.link),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: CachedNetworkImage(
+                                    imageUrl: record.link,
+                                    httpHeaders: {
+                                      'Referer': Uri.tryParse(record.link)?.origin ?? '',
+                                      'User-Agent':
+                                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                                    },
                                     width: double.infinity,
-                                    height: 200,
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF374151) : const Color(0xFFF2F2F7),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        LucideIcons.image,
-                                        size: 48,
-                                        color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, error, stackTrace) =>
+                                        Container(
+                                      width: double.infinity,
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF374151) : const Color(0xFFF2F2F7),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          LucideIcons.image,
+                                          size: 48,
+                                          color: theme.textTheme.bodySmall?.color ?? const Color(0xFF8E8E93),
+                                        ),
                                       ),
                                     ),
                                   ),

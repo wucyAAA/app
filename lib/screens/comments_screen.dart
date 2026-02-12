@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -12,6 +13,14 @@ import '../router/app_router.dart';
 import '../utils/toast_utils.dart';
 import '../widgets/video_player_widget.dart';
 import '../widgets/video_thumbnail_widget.dart';
+
+String _safeOrigin(String url) {
+  try {
+    final uri = Uri.parse(url);
+    if (uri.hasScheme && uri.hasAuthority) return uri.origin;
+  } catch (_) {}
+  return '';
+}
 
 class CommentsScreen extends StatefulWidget {
   const CommentsScreen({super.key});
@@ -246,6 +255,16 @@ class _CommentsScreenState extends State<CommentsScreen> {
     }
   }
 
+  void _copyComment(CommentItem comment) {
+    final text = comment.hasImage && comment.url.isNotEmpty
+        ? comment.url
+        : comment.raw;
+    if (text.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: text));
+      ToastUtils.showSuccess('已复制');
+    }
+  }
+
   void _showCommentDetail(CommentItem comment) {
     if (comment.isMidPageType) {
       context.push(
@@ -302,51 +321,54 @@ class _CommentsScreenState extends State<CommentsScreen> {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           backgroundColor: Colors.black,
-          body: Stack(
-            children: [
-              Center(
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    httpHeaders: {
-                      'Referer': Uri.parse(imageUrl).origin,
-                      'User-Agent':
-                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
-                    },
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: CupertinoActivityIndicator(radius: 16),
-                    ),
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10,
-                right: 16,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      LucideIcons.x,
-                      color: Colors.white,
-                      size: 24,
+          body: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      httpHeaders: {
+                        'Referer': _safeOrigin(imageUrl),
+                        'User-Agent':
+                            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                      },
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(
+                        child: CupertinoActivityIndicator(radius: 16),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.x,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -635,8 +657,15 @@ class _CommentsScreenState extends State<CommentsScreen> {
           key: ValueKey(comment.id),
           endActionPane: ActionPane(
             motion: const ScrollMotion(),
-            extentRatio: 0.25,
+            extentRatio: 0.5,
             children: [
+              SlidableAction(
+                onPressed: (_) => _copyComment(comment),
+                backgroundColor: const Color(0xFF007AFF),
+                foregroundColor: Colors.white,
+                icon: Icons.copy_rounded,
+                label: '复制',
+              ),
               SlidableAction(
                 onPressed: (_) => _pushComment(comment),
                 backgroundColor: const Color(0xFF5856D6),
@@ -689,7 +718,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                   child: CachedNetworkImage(
                                     imageUrl: comment.url,
                                     httpHeaders: {
-                                      'Referer': Uri.parse(comment.url).origin,
+                                      'Referer': _safeOrigin(comment.url),
                                       'User-Agent':
                                           'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
                                     },
@@ -742,6 +771,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                         runSpacing: 6,
                         children: [
                           ...comment.stocks
+                              .where((stock) => stock.name.isNotEmpty)
                               .map((stock) => _buildStockTag(stock, isDark)),
                           ...comment.keywords.map(
                               (keyword) => _buildKeywordTag(keyword, isDark)),
@@ -854,22 +884,66 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   Widget _buildStockTag(Stock stock, bool isDark) {
-    final displayChange = stock.displayChange;
-    final isPositive = stock.isPositive;
-    final isNegative = stock.isNegative;
+    final neutralColor = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF3C3C43);
+    final redColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+    final greenColor = isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
 
     Color bgColor;
-    Color textColor;
+    Widget child;
 
-    if (isPositive) {
-      bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
-      textColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
-    } else if (isNegative) {
-      bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
-      textColor = isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
+    if (stock.hasOpenClose) {
+      // 背景色根据 open 值的正负决定
+      final openPositive = Stock.isValuePositive(stock.open);
+      final openNegative = Stock.isValueNegative(stock.open);
+      if (openPositive) {
+        bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
+      } else if (openNegative) {
+        bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
+      } else {
+        bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
+      }
+
+      final openColor = Stock.isValuePositive(stock.open) ? redColor : Stock.isValueNegative(stock.open) ? greenColor : neutralColor;
+      final closeColor = Stock.isValuePositive(stock.close) ? redColor : Stock.isValueNegative(stock.close) ? greenColor : neutralColor;
+
+      child = RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 11),
+          children: [
+            TextSpan(text: '${stock.name}( ', style: TextStyle(color: neutralColor)),
+            TextSpan(text: stock.open, style: TextStyle(color: openColor)),
+            TextSpan(text: ', ', style: TextStyle(color: neutralColor)),
+            TextSpan(text: stock.close, style: TextStyle(color: closeColor)),
+            TextSpan(text: ' )', style: TextStyle(color: neutralColor)),
+          ],
+        ),
+      );
+    } else if (stock.change.isNotEmpty) {
+      // 只有 change 时，保持现有逻辑
+      final isPositive = stock.isPositive;
+      final isNegative = stock.isNegative;
+      Color textColor;
+      if (isPositive) {
+        bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
+        textColor = redColor;
+      } else if (isNegative) {
+        bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
+        textColor = greenColor;
+      } else {
+        bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
+        textColor = neutralColor;
+      }
+      child = Text(
+        '${stock.name} ${stock.change}',
+        style: TextStyle(fontSize: 11, color: textColor),
+      );
     } else {
+      // 全空，只显示股票名
       bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
-      textColor = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF3C3C43);
+      child = Text(
+        stock.name,
+        style: TextStyle(fontSize: 11, color: neutralColor),
+      );
     }
 
     return Container(
@@ -878,13 +952,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        '${stock.name} $displayChange',
-        style: TextStyle(
-          fontSize: 11,
-          color: textColor,
-        ),
-      ),
+      child: child,
     );
   }
 
@@ -922,51 +990,54 @@ class CommentDetailModal extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           backgroundColor: Colors.black,
-          body: Stack(
-            children: [
-              Center(
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    httpHeaders: {
-                      'Referer': Uri.parse(imageUrl).origin,
-                      'User-Agent':
-                          'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
-                    },
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => const Center(
-                      child: CupertinoActivityIndicator(radius: 16),
-                    ),
-                    errorWidget: (context, url, error) => const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 10,
-                right: 16,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      LucideIcons.x,
-                      color: Colors.white,
-                      size: 24,
+          body: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      httpHeaders: {
+                        'Referer': _safeOrigin(imageUrl),
+                        'User-Agent':
+                            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                      },
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(
+                        child: CupertinoActivityIndicator(radius: 16),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 48,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.x,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1025,22 +1096,53 @@ class CommentDetailModal extends StatelessWidget {
                             color: theme.textTheme.titleMedium?.color,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: onClose,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF374151)
-                                  : const Color(0xFFF2F2F7),
-                              borderRadius: BorderRadius.circular(20),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                final text = comment.hasImage && comment.url.isNotEmpty
+                                    ? comment.url
+                                    : comment.raw;
+                                if (text.isNotEmpty) {
+                                  Clipboard.setData(ClipboardData(text: text));
+                                  ToastUtils.showSuccess('已复制');
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF374151)
+                                      : const Color(0xFFF2F2F7),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  Icons.copy_rounded,
+                                  size: 18,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                              ),
                             ),
-                            child: Icon(
-                              LucideIcons.x,
-                              size: 20,
-                              color: theme.textTheme.bodyMedium?.color,
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: onClose,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF374151)
+                                      : const Color(0xFFF2F2F7),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  LucideIcons.x,
+                                  size: 20,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -1177,8 +1279,7 @@ class CommentDetailModal extends StatelessWidget {
                                             child: CachedNetworkImage(
                                               imageUrl: src,
                                               httpHeaders: {
-                                                'Referer':
-                                                    Uri.parse(src).origin,
+                                                'Referer': _safeOrigin(src),
                                                 'User-Agent':
                                                     'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
                                               },
@@ -1280,7 +1381,9 @@ class CommentDetailModal extends StatelessWidget {
                                     spacing: 8,
                                     runSpacing: 8,
                                     children: [
-                                      ...comment.stocks.map((stock) =>
+                                      ...comment.stocks
+                                          .where((stock) => stock.name.isNotEmpty)
+                                          .map((stock) =>
                                           _buildStockChip(stock, isDark)),
                                       ...comment.keywords.map((kw) =>
                                           _buildKeywordChip(kw, isDark)),
@@ -1339,22 +1442,63 @@ class CommentDetailModal extends StatelessWidget {
   }
 
   Widget _buildStockChip(Stock stock, bool isDark) {
-    final displayChange = stock.displayChange;
-    final isPositive = stock.isPositive;
-    final isNegative = stock.isNegative;
+    final neutralColor = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF3C3C43);
+    final redColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+    final greenColor = isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
 
     Color bgColor;
-    Color textColor;
+    Widget child;
 
-    if (isPositive) {
-      bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
-      textColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
-    } else if (isNegative) {
-      bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
-      textColor = isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
+    if (stock.hasOpenClose) {
+      final openPositive = Stock.isValuePositive(stock.open);
+      final openNegative = Stock.isValueNegative(stock.open);
+      if (openPositive) {
+        bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
+      } else if (openNegative) {
+        bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
+      } else {
+        bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
+      }
+
+      final openColor = Stock.isValuePositive(stock.open) ? redColor : Stock.isValueNegative(stock.open) ? greenColor : neutralColor;
+      final closeColor = Stock.isValuePositive(stock.close) ? redColor : Stock.isValueNegative(stock.close) ? greenColor : neutralColor;
+
+      child = RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          children: [
+            TextSpan(text: '${stock.name}( ', style: TextStyle(color: neutralColor)),
+            TextSpan(text: stock.open, style: TextStyle(color: openColor)),
+            TextSpan(text: ', ', style: TextStyle(color: neutralColor)),
+            TextSpan(text: stock.close, style: TextStyle(color: closeColor)),
+            TextSpan(text: ' )', style: TextStyle(color: neutralColor)),
+          ],
+        ),
+      );
+    } else if (stock.change.isNotEmpty) {
+      final isPositive = stock.isPositive;
+      final isNegative = stock.isNegative;
+      Color textColor;
+      if (isPositive) {
+        bgColor = isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2);
+        textColor = redColor;
+      } else if (isNegative) {
+        bgColor = isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4);
+        textColor = greenColor;
+      } else {
+        bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
+        textColor = neutralColor;
+      }
+      child = Text(
+        '${stock.name} ${stock.change}',
+        style: TextStyle(fontSize: 13, color: textColor, fontWeight: FontWeight.w500),
+      );
     } else {
       bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF2F2F7);
-      textColor = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF3C3C43);
+      child = Text(
+        stock.name,
+        style: TextStyle(fontSize: 13, color: neutralColor, fontWeight: FontWeight.w500),
+      );
     }
 
     return Container(
@@ -1363,14 +1507,7 @@ class CommentDetailModal extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        '${stock.name} $displayChange',
-        style: TextStyle(
-          fontSize: 13,
-          color: textColor,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      child: child,
     );
   }
 

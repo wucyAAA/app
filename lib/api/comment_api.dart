@@ -16,6 +16,9 @@ class Stock {
     this.close = '',
   });
 
+  /// 是否同时有 open 和 close 值
+  bool get hasOpenClose => open.isNotEmpty && close.isNotEmpty;
+
   /// 获取显示的涨跌幅，优先使用 change，如果为空则使用 open
   String get displayChange {
     if (change.isNotEmpty) return change;
@@ -23,13 +26,11 @@ class Stock {
     return '';
   }
 
-  /// 是否为上涨
-  bool get isPositive {
-    final val = displayChange;
+  /// 判断单个值是否为正
+  static bool isValuePositive(String val) {
     if (val.isEmpty) return false;
     if (val.startsWith('+')) return true;
     if (val.startsWith('-')) return false;
-    // 尝试解析为数字（去掉百分号）
     try {
       final numStr = val.replaceAll('%', '');
       final numVal = double.parse(numStr);
@@ -39,9 +40,8 @@ class Stock {
     }
   }
 
-  /// 是否为下跌
-  bool get isNegative {
-    final val = displayChange;
+  /// 判断单个值是否为负
+  static bool isValueNegative(String val) {
     if (val.isEmpty) return false;
     if (val.startsWith('-')) return true;
     if (val.startsWith('+')) return false;
@@ -53,6 +53,12 @@ class Stock {
       return false;
     }
   }
+
+  /// 是否为上涨
+  bool get isPositive => isValuePositive(displayChange);
+
+  /// 是否为下跌
+  bool get isNegative => isValueNegative(displayChange);
 
   factory Stock.fromJson(Map<String, dynamic> json) {
     return Stock(

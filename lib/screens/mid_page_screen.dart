@@ -161,10 +161,36 @@ class _MidPageScreenState extends State<MidPageScreen> {
     }
   }
 
+  String _cleanReutersHtml(String html) {
+    // Remove embedded <style> blocks — flutter_html doesn't handle them well
+    html = html.replaceAll(RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false), '');
+    // Remove inline style attributes that override mobile-friendly rendering
+    html = html.replaceAll(RegExp(r'\s*style="[^"]*"', caseSensitive: false), '');
+    // Remove base64 inline images (tiny icons that clutter the layout)
+    html = html.replaceAll(RegExp(r'<img[^>]*src="data:image[^"]*"[^>]*/?>',caseSensitive: false), '');
+    // Convert {{timestamp}} placeholders to readable date
+    html = html.replaceAllMapped(RegExp(r'\{\{(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.\d+\+\d+\}\}'), (m) {
+      return '${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}';
+    });
+    // Collapse excessive <br/> sequences
+    html = html.replaceAll(RegExp(r'(<br\s*/?>[\s]*){3,}', caseSensitive: false), '<br/><br/>');
+    // Remove empty divs
+    html = html.replaceAll(RegExp(r'<div[^>]*>\s*</div>', caseSensitive: false), '');
+    return html;
+  }
+
   Future<String> _decryptImg(String url) async {
     // TODO: Implement actual decryption logic from utils/util.js
     // For now return as is.
     return url;
+  }
+
+  String _safeOrigin(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.hasScheme && uri.hasAuthority) return uri.origin;
+    } catch (_) {}
+    return '';
   }
 
   String _cleanUrl(dynamic val) {
@@ -282,7 +308,7 @@ class _MidPageScreenState extends State<MidPageScreen> {
           return CachedNetworkImage(
             imageUrl: _imageUrls[index],
             httpHeaders: {
-              'Referer': Uri.parse(_imageUrls[index]).origin,
+              'Referer': _safeOrigin(_imageUrls[index]),
               'User-Agent':
                   'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
             },
@@ -332,7 +358,7 @@ class _MidPageScreenState extends State<MidPageScreen> {
                         backgroundImage: CachedNetworkImageProvider(
                           _cleanUrl(_twitterData!['type']),
                           headers: {
-                            'Referer': Uri.tryParse(_cleanUrl(_twitterData!['type']))?.origin ?? '',
+                            'Referer': _safeOrigin(_cleanUrl(_twitterData!['type'])),
                             'User-Agent':
                                 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
                           },
@@ -388,7 +414,7 @@ class _MidPageScreenState extends State<MidPageScreen> {
                     child: CachedNetworkImage(
                       imageUrl: _cleanUrl(_twitterData!['link']),
                       httpHeaders: {
-                        'Referer': Uri.tryParse(_cleanUrl(_twitterData!['link']))?.origin ?? '',
+                        'Referer': _safeOrigin(_cleanUrl(_twitterData!['link'])),
                         'User-Agent':
                             'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
                       },
@@ -418,11 +444,97 @@ class _MidPageScreenState extends State<MidPageScreen> {
       );
     }
 
-    if ((_showReuter || _showCaixin || _showJnz || _showBloombergMobile) && _htmlContent != null) {
+    if (_showReuter && _htmlContent != null) {
       return SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Html(
-          data: _htmlContent!.replaceAll('\n', '<br/>'),
+          data: _cleanReutersHtml(_htmlContent!),
+          style: {
+            "body": Style(
+              fontSize: FontSize(16),
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              lineHeight: LineHeight(1.8),
+              color: theme.textTheme.bodyLarge?.color,
+              margin: Margins.zero,
+              padding: HtmlPaddings.zero,
+            ),
+            "h1": Style(
+              fontSize: FontSize(22),
+              fontWeight: FontWeight.bold,
+              lineHeight: LineHeight(1.4),
+              margin: Margins.only(bottom: 16),
+              color: theme.textTheme.titleLarge?.color,
+            ),
+            "h2": Style(
+              fontSize: FontSize(18),
+              fontWeight: FontWeight.w600,
+              margin: Margins.only(top: 20, bottom: 12),
+              color: theme.textTheme.titleMedium?.color,
+            ),
+            "p": Style(
+              fontSize: FontSize(16),
+              lineHeight: LineHeight(1.8),
+              margin: Margins.only(bottom: 14),
+            ),
+            "a": Style(
+              color: theme.primaryColor,
+              textDecoration: TextDecoration.none,
+            ),
+            "li": Style(
+              fontSize: FontSize(15),
+              lineHeight: LineHeight(1.6),
+              margin: Margins.only(bottom: 8),
+            ),
+            "ul": Style(
+              margin: Margins.only(bottom: 16, left: 4),
+              padding: HtmlPaddings.only(left: 12),
+            ),
+            ".newsHeaderH1": Style(
+              fontSize: FontSize(22),
+              fontWeight: FontWeight.bold,
+              lineHeight: LineHeight(1.4),
+              margin: Margins.only(bottom: 12),
+            ),
+            ".date": Style(
+              fontSize: FontSize(13),
+              color: theme.textTheme.bodySmall?.color ?? Colors.grey,
+              margin: Margins.only(bottom: 16),
+            ),
+            ".storyContent": Style(
+              fontSize: FontSize(16),
+              lineHeight: LineHeight(1.8),
+              margin: Margins.only(top: 8),
+            ),
+            ".storyId": Style(
+              display: Display.none,
+            ),
+            ".copyright": Style(
+              fontSize: FontSize(11),
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5) ?? Colors.grey[400],
+              margin: Margins.only(top: 24),
+              padding: HtmlPaddings.only(top: 16),
+              border: Border(top: BorderSide(color: theme.dividerColor.withOpacity(0.3))),
+            ),
+            ".disclaimer": Style(
+              fontSize: FontSize(11),
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.5) ?? Colors.grey[400],
+            ),
+            "img": Style(
+              margin: Margins.symmetric(vertical: 8),
+            ),
+          },
+          onLinkTap: (url, attributes, element) {
+            if (url != null) _launchUrl(url);
+          },
+        ),
+      );
+    }
+
+    if ((_showCaixin || _showJnz || _showBloombergMobile) && _htmlContent != null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Html(
+          data: _htmlContent!,
           style: {
             "body": Style(
               fontSize: FontSize(17),

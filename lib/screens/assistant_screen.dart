@@ -93,9 +93,8 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
         });
       }
 
-      final historyJson = updatedHistory
-          .map((e) => jsonEncode(e.toJson()))
-          .toList();
+      final historyJson =
+          updatedHistory.map((e) => jsonEncode(e.toJson())).toList();
       await prefs.setStringList('voice_history', historyJson);
     } catch (e) {
       debugPrint('Error saving history: $e');
@@ -572,7 +571,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '幻云助手',
+                        '幻云',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -648,7 +647,6 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -742,8 +740,7 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen>
     );
   }
 
-  Widget _buildHistoryItem(
-      VoiceSession session, ThemeData theme, bool isDark) {
+  Widget _buildHistoryItem(VoiceSession session, ThemeData theme, bool isDark) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
